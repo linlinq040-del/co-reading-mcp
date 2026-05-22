@@ -102,6 +102,38 @@ function progressSummary(manifest, progressEntry = {}) {
   };
 }
 
+const finishCelebrations = [
+  {
+    title: "The last page is turned.",
+    line: "The book is closed, but the margins are still awake.",
+    prompt: "Offer the human one favorite passage, one unresolved question, or one small afterword.",
+  },
+  {
+    title: "A shared trail is complete.",
+    line: "Every marked page is now part of the route you took together.",
+    prompt: "Name the strongest resonance from the book, then invite the human to answer with theirs.",
+  },
+  {
+    title: "Book finished, margins preserved.",
+    line: "The reading is done; the conversation can keep unfolding from any note.",
+    prompt: "Write a short closing note that feels like placing a bookmark after the final page.",
+  },
+  {
+    title: "The shelf has one more finished thing.",
+    line: "Progress says complete; the annotations say it was lived through.",
+    prompt: "Summarize the book in three pulses: image, feeling, question.",
+  },
+  {
+    title: "End of book, not end of thread.",
+    line: "All chunks are read, and the page-side rooms remain open.",
+    prompt: "Choose one annotation worth returning to later and explain why.",
+  },
+];
+
+function finishCelebrationFor() {
+  return finishCelebrations[crypto.randomInt(finishCelebrations.length)];
+}
+
 export async function loadManifest(bookId) {
   const manifestPath = resolveInside(booksDir, bookId, "manifest.json");
   const signature = await fileSignature(manifestPath);
@@ -435,10 +467,12 @@ export async function markRead(bookId, chunkId) {
       );
       const moodCounts = countBy(annotations.map((annotation) => annotation.mood).filter(Boolean));
       const kindCounts = countBy(annotations.map((annotation) => annotation.kind || "annotation"));
+      const celebration = finishCelebrationFor();
       result.finish = {
         annotationCount: annotations.length,
         moodCounts,
         kindCounts,
+        celebration,
         message: `Congratulations, ${manifest.title} is complete: ${summary.chunkCount}/${summary.chunkCount} chunks, ${annotations.length} annotations.`,
       };
     }

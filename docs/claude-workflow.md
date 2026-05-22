@@ -91,7 +91,7 @@ When done with a chunk, call:
 
 with `reading_mark_read`.
 
-If this completes the final chunk, `reading_mark_read` returns a small finish summary with chunk count, annotation count, and mood/kind counts. Use that as a closing ritual for the reading session.
+If this completes the final chunk, `reading_mark_read` returns a small finish summary with chunk count, annotation count, mood/kind counts, and a tiny `celebration` prompt. Use that as a closing ritual for the reading session.
 
 ## Search
 

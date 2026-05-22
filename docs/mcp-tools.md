@@ -217,10 +217,17 @@ When the marked chunk completes the book, the response also includes:
     "annotationCount": 32,
     "moodCounts": { "quiet": 4 },
     "kindCounts": { "resonance": 12, "feeling": 5 },
+    "celebration": {
+      "title": "Book finished, margins preserved.",
+      "line": "The reading is done; the conversation can keep unfolding from any note.",
+      "prompt": "Write a short closing note that feels like placing a bookmark after the final page."
+    },
     "message": "Congratulations, Book Title is complete: 43/43 chunks, 32 annotations."
   }
 }
 ```
+
+`finish.celebration` is intentionally small and variable. Claude can use it as a closing ritual, or a frontend can ignore it and keep only the stable counts.
 
 ## `reading_get_progress`
 

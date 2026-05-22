@@ -10,6 +10,7 @@ A local MCP server that gives Claude a durable reading room:
 - write margin annotations
 - stage user notes, submit them to Claude once, and attach Claude replies under them
 - track reading progress
+- return a small finish ritual when a book is completed
 
 The goal is not one-shot summarization. The goal is a shared reading surface where a human and Claude can both read, leave anchored notes, and resume smoothly.
 

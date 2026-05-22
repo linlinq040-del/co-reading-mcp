@@ -587,6 +587,9 @@ if (contentJson(markImportFirst).complete !== false) {
 if (contentJson(markImportDone).complete !== true || !contentJson(markImportDone).finish?.message.includes("complete")) {
   throw new Error("reading_mark_read did not return a finish ceremony for the final chunk");
 }
+if (!contentJson(markImportDone).finish?.celebration?.prompt) {
+  throw new Error("reading_mark_read did not return a finish celebration prompt");
+}
 if (!badImportBookId.error?.message.includes("bookId may only contain")) {
   throw new Error("reading_import_book did not reject unsafe bookId");
 }
