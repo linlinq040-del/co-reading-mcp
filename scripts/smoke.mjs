@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { cp, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,6 +7,16 @@ import { fileURLToPath } from "node:url";
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const tempDataDir = await mkdtemp(path.join(os.tmpdir(), "co-reading-mcp-"));
 await cp(path.join(root, "data.example"), tempDataDir, { recursive: true });
+await mkdir(path.join(tempDataDir, "books", "bad-book"), { recursive: true });
+await writeFile(
+  path.join(tempDataDir, "books", "bad-book", "manifest.json"),
+  `${JSON.stringify({
+    bookId: "bad-book",
+    title: "Bad Book",
+    chunks: [{ id: "ch00", title: "Bad", order: 0, path: "../../outside.txt" }],
+  })}\n`,
+  "utf8",
+);
 
 const server = spawn(process.execPath, [path.join(root, "src/server.js")], {
   env: {
@@ -18,10 +28,14 @@ const server = spawn(process.execPath, [path.join(root, "src/server.js")], {
 
 let nextId = 1;
 const pending = new Map();
+let stdoutBuffer = "";
 
 server.stdout.setEncoding("utf8");
 server.stdout.on("data", (chunk) => {
-  for (const line of chunk.split("\n").filter(Boolean)) {
+  stdoutBuffer += chunk;
+  const lines = stdoutBuffer.split("\n");
+  stdoutBuffer = lines.pop() || "";
+  for (const line of lines.filter(Boolean)) {
     const msg = JSON.parse(line);
     const resolve = pending.get(msg.id);
     if (resolve) {
@@ -97,6 +111,14 @@ const replies = await request("tools/call", {
   name: "reading_list_annotations",
   arguments: { parentId: "ann_demo_user_001" },
 });
+const badBookPath = await request("tools/call", {
+  name: "reading_read_chunk",
+  arguments: { bookId: "../../..", chunkId: "ch00" },
+});
+const badChunkPath = await request("tools/call", {
+  name: "reading_read_chunk",
+  arguments: { bookId: "bad-book", chunkId: "ch00" },
+});
 
 server.kill();
 await rm(tempDataDir, { recursive: true, force: true });
@@ -139,6 +161,12 @@ if (!reply.result?.content?.[0]?.text.includes('"parentId": "ann_demo_user_001"'
 }
 if (!replies.result?.content?.[0]?.text.includes("Claude can answer in the margin")) {
   throw new Error("reading_list_annotations did not find the attached reply");
+}
+if (!badBookPath.error?.message.includes("Path escapes data directory")) {
+  throw new Error("reading_read_chunk did not reject path traversal bookId");
+}
+if (!badChunkPath.error?.message.includes("Path escapes data directory")) {
+  throw new Error("reading_read_chunk did not reject path traversal chunk path");
 }
 
 console.log("smoke ok");

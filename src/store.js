@@ -14,6 +14,16 @@ const annotationsPath = path.join(dataDir, "annotations.jsonl");
 const progressPath = path.join(dataDir, "progress.json");
 const sessionsPath = path.join(dataDir, "reading_sessions.json");
 
+function resolveInside(baseDir, ...parts) {
+  const base = path.resolve(baseDir);
+  const resolved = path.resolve(base, ...parts);
+  const relative = path.relative(base, resolved);
+  if (relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))) {
+    return resolved;
+  }
+  throw new Error(`Path escapes data directory: ${parts.join("/")}`);
+}
+
 async function readJson(filePath, fallback) {
   try {
     return JSON.parse(await readFile(filePath, "utf8"));
@@ -39,7 +49,7 @@ function asArray(value) {
 }
 
 export async function loadManifest(bookId) {
-  const manifest = await readJson(path.join(booksDir, bookId, "manifest.json"), null);
+  const manifest = await readJson(resolveInside(booksDir, bookId, "manifest.json"), null);
   if (!manifest) throw new Error(`Unknown bookId: ${bookId}`);
   manifest.chunks = asArray(manifest.chunks);
   return manifest;
@@ -109,7 +119,8 @@ export async function readChunk(bookId, chunkId) {
   const manifest = await loadManifest(bookId);
   const chunk = manifest.chunks.find((item) => item.id === chunkId);
   if (!chunk) throw new Error(`Unknown chunkId for ${bookId}: ${chunkId}`);
-  const chunkPath = path.join(booksDir, bookId, chunk.path);
+  const bookDir = resolveInside(booksDir, bookId);
+  const chunkPath = resolveInside(bookDir, chunk.path);
   const text = await readFile(chunkPath, "utf8");
   return {
     bookId,

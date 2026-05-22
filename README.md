@@ -14,6 +14,11 @@ The goal is not one-shot summarization. The goal is a shared reading surface whe
 
 ## Quick Start
 
+Requirements:
+
+- Node.js 18+
+- Python 3.10+ for the import scripts
+
 ```bash
 cd reading-mcp
 cp -R data.example data
