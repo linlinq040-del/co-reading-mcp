@@ -12,6 +12,8 @@ A local MCP server that gives Claude a durable reading room:
 
 The goal is not one-shot summarization. The goal is a shared reading surface where a human and Claude can both read, leave anchored notes, and resume smoothly.
 
+For a step-by-step setup and usage flow, see [docs/user-guide.md](docs/user-guide.md).
+
 ## Quick Start
 
 Requirements:
