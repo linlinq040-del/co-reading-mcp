@@ -9,8 +9,10 @@ import {
   listAnnotations,
   listBooks,
   listChunks,
+  listSubmissions,
   markRead,
   readChunk,
+  readSubmission,
   replyToAnnotation,
   searchChunks,
   submitUserNotes,
@@ -169,7 +171,7 @@ export const tools = [
   },
   {
     name: "reading_annotate_passage",
-    description: "Write a margin annotation anchored to a quote in a chunk.",
+    description: "Write a Claude margin annotation anchored to a quote in a chunk. Human private notes should be created through the HTTP reader API, not this MCP tool.",
     inputSchema: {
       type: "object",
       required: ["bookId", "chunkId", "quote", "note"],
@@ -178,11 +180,9 @@ export const tools = [
         chunkId: { type: "string" },
         quote: { type: "string" },
         note: { type: "string" },
-        author: { type: "string" },
         kind: { type: "string" },
         mood: { type: "string" },
         tags: { type: "array", items: { type: "string" } },
-        status: { type: "string" },
         parentId: { type: "string" },
       },
       additionalProperties: false,
@@ -228,6 +228,32 @@ export const tools = [
     annotations: { title: "Submit User Notes" },
   },
   {
+    name: "reading_list_submissions",
+    description: "List human note submission batches that have been shared with Claude.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        bookId: { type: "string" },
+        chunkId: { type: "string" },
+        sessionId: { type: "string" },
+        limit: { type: "number" },
+      },
+      additionalProperties: false,
+    },
+    annotations: { title: "List Submissions", readOnlyHint: true },
+  },
+  {
+    name: "reading_read_submission",
+    description: "Read one human note submission batch including notes and context.",
+    inputSchema: {
+      type: "object",
+      required: ["submissionId"],
+      properties: { submissionId: { type: "string" } },
+      additionalProperties: false,
+    },
+    annotations: { title: "Read Submission", readOnlyHint: true },
+  },
+  {
     name: "reading_reply_to_annotation",
     description: "Attach a Claude reply under an existing user or Claude annotation.",
     inputSchema: {
@@ -236,7 +262,6 @@ export const tools = [
       properties: {
         parentId: { type: "string" },
         note: { type: "string" },
-        author: { type: "string" },
         kind: { type: "string" },
         mood: { type: "string" },
         tags: { type: "array", items: { type: "string" } },
@@ -313,13 +338,17 @@ export async function callTool(name, args = {}) {
     case "reading_import_cancel":
       return textContent(await cancelImport(args));
     case "reading_annotate_passage":
-      return textContent(await annotatePassage(args));
+      return textContent(await annotatePassage({ ...args, author: "claude", status: "published" }));
     case "reading_list_annotations":
       return textContent(await listAnnotations(args));
     case "reading_submit_user_notes":
       return textContent(await submitUserNotes(args));
+    case "reading_list_submissions":
+      return textContent(await listSubmissions(args));
+    case "reading_read_submission":
+      return textContent(await readSubmission(args.submissionId));
     case "reading_reply_to_annotation":
-      return textContent(await replyToAnnotation(args));
+      return textContent(await replyToAnnotation({ ...args, author: "claude", status: "published" }));
     case "reading_mark_read":
       return textContent(await markRead(args.bookId, args.chunkId));
     case "reading_get_progress":

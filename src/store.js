@@ -11,6 +11,7 @@ export const dataDir = process.env.READING_MCP_DATA_DIR
 
 const booksDir = path.join(dataDir, "books");
 const annotationsPath = path.join(dataDir, "annotations.jsonl");
+const submissionsPath = path.join(dataDir, "submissions.jsonl");
 const progressPath = path.join(dataDir, "progress.json");
 const sessionsPath = path.join(dataDir, "reading_sessions.json");
 
@@ -29,6 +30,9 @@ function invalidateAnnotationCache() {
   annotationCache.rows = [];
   annotationCache.bookCounts = new Map();
   annotationCache.chunkCounts = new Map();
+  annotationCache.publicRows = [];
+  annotationCache.publicBookCounts = new Map();
+  annotationCache.publicChunkCounts = new Map();
 }
 
 async function withWriteLock(operation) {
@@ -154,6 +158,21 @@ async function annotationSummary() {
   }
 
   const rows = await readAllAnnotations();
+  const publicRows = visibleAnnotations(rows);
+  const { bookCounts, chunkCounts } = countAnnotationRows(rows);
+  const publicCounts = countAnnotationRows(publicRows);
+
+  annotationCache.signature = signature;
+  annotationCache.rows = rows;
+  annotationCache.bookCounts = bookCounts;
+  annotationCache.chunkCounts = chunkCounts;
+  annotationCache.publicRows = publicRows;
+  annotationCache.publicBookCounts = publicCounts.bookCounts;
+  annotationCache.publicChunkCounts = publicCounts.chunkCounts;
+  return annotationCache;
+}
+
+function countAnnotationRows(rows) {
   const bookCounts = new Map();
   const chunkCounts = new Map();
   for (const annotation of rows) {
@@ -161,15 +180,36 @@ async function annotationSummary() {
     const chunkKey = chunkContextKey(annotation.bookId, annotation.chunkId);
     chunkCounts.set(chunkKey, (chunkCounts.get(chunkKey) || 0) + 1);
   }
-
-  annotationCache.signature = signature;
-  annotationCache.rows = rows;
-  annotationCache.bookCounts = bookCounts;
-  annotationCache.chunkCounts = chunkCounts;
-  return annotationCache;
+  return { bookCounts, chunkCounts };
 }
 
-export async function listBooks() {
+function isHumanAuthor(author) {
+  return ["user", "human", "koshi", "you"].includes(String(author || "").toLowerCase());
+}
+
+function isPrivateHumanAnnotation(annotation) {
+  const status = annotation.status || "published";
+  return isHumanAuthor(annotation.author) && ["open", "private", "draft"].includes(status);
+}
+
+function visibleAnnotations(rows, { includePrivate = false } = {}) {
+  if (includePrivate) return rows;
+  const hiddenIds = new Set();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const annotation of rows) {
+      if (!annotation.id || hiddenIds.has(annotation.id)) continue;
+      if (isPrivateHumanAnnotation(annotation) || (annotation.parentId && hiddenIds.has(annotation.parentId))) {
+        hiddenIds.add(annotation.id);
+        changed = true;
+      }
+    }
+  }
+  return rows.filter((annotation) => !hiddenIds.has(annotation.id));
+}
+
+export async function listBooks({ includePrivate = false } = {}) {
   let entries = [];
   try {
     entries = await readdir(booksDir, { withFileTypes: true });
@@ -180,6 +220,7 @@ export async function listBooks() {
 
   const progress = await loadProgress();
   const annotations = await annotationSummary();
+  const bookCounts = includePrivate ? annotations.bookCounts : annotations.publicBookCounts;
 
   const books = [];
   for (const entry of entries) {
@@ -194,7 +235,7 @@ export async function listBooks() {
         language: manifest.language || null,
         chunkCount: manifest.chunks.length,
         chunksRead: summary.chunksRead,
-        annotationCount: annotations.bookCounts.get(manifest.bookId) || 0,
+        annotationCount: bookCounts.get(manifest.bookId) || 0,
         lastChunkId: summary.lastChunkId,
         lastReadAt: summary.lastReadAt,
         complete: summary.complete,
@@ -206,16 +247,17 @@ export async function listBooks() {
   return books.sort((a, b) => a.title.localeCompare(b.title));
 }
 
-export async function listChunks(bookId) {
+export async function listChunks(bookId, { includePrivate = false } = {}) {
   const manifest = await loadManifest(bookId);
   const progress = await loadProgress();
   const readIds = validReadIds(manifest, progress[bookId] || {});
   const annotations = await annotationSummary();
+  const chunkCounts = includePrivate ? annotations.chunkCounts : annotations.publicChunkCounts;
 
   return sortedChunks(manifest).map((chunk) => ({
     ...chunk,
     read: readIds.has(chunk.id),
-    annotationCount: annotations.chunkCounts.get(chunkContextKey(bookId, chunk.id)) || 0,
+    annotationCount: chunkCounts.get(chunkContextKey(bookId, chunk.id)) || 0,
   }));
 }
 
@@ -489,9 +531,13 @@ function countBy(values) {
 }
 
 async function readAllAnnotations() {
+  return readJsonl(annotationsPath);
+}
+
+async function readJsonl(filePath) {
   let raw = "";
   try {
-    raw = await readFile(annotationsPath, "utf8");
+    raw = await readFile(filePath, "utf8");
   } catch (error) {
     if (error.code === "ENOENT") return [];
     throw error;
@@ -510,9 +556,13 @@ async function readAllAnnotations() {
     .filter(Boolean);
 }
 
-export async function listAnnotations({ bookId, chunkId, kind, author, status, parentId } = {}) {
+async function readAllSubmissions() {
+  return readJsonl(submissionsPath);
+}
+
+export async function listAnnotations({ bookId, chunkId, kind, author, status, parentId, includePrivate = false } = {}) {
   const annotations = await annotationSummary();
-  return annotations.rows
+  return visibleAnnotations(annotations.rows, { includePrivate })
     .filter((item) => !bookId || item.bookId === bookId)
     .filter((item) => !chunkId || item.chunkId === chunkId)
     .filter((item) => !kind || item.kind === kind)
@@ -554,7 +604,7 @@ export async function annotatePassage(input) {
       kind: input.kind || "annotation",
       mood: input.mood || null,
       tags: Array.isArray(input.tags) ? input.tags : [],
-      status: input.status || (author === "user" ? "open" : "published"),
+      status: input.status || (isHumanAuthor(author) ? "open" : "published"),
       parentId,
       quoteOffset: quoteOffset >= 0 ? quoteOffset : null,
       prevId: chunk.prevId,
@@ -590,8 +640,8 @@ export async function submitUserNotes({
     const updated = annotations.map((annotation) => {
       const status = annotation.status || "published";
       const shouldSubmit =
-        annotation.author === "user" &&
-        status === "open" &&
+        isHumanAuthor(annotation.author) &&
+        ["open", "private", "draft"].includes(status) &&
         (!bookId || annotation.bookId === bookId) &&
         (!chunkId || annotation.chunkId === chunkId);
 
@@ -612,11 +662,36 @@ export async function submitUserNotes({
     const ledger = context.ledger;
     delete context.ledger;
 
+    let submission = null;
     if (submitted.length > 0) {
+      submission = {
+        id: `sub_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+        submittedAt,
+        sessionId,
+        bookId: bookId || null,
+        chunkId: chunkId || null,
+        noteIds: submitted.map((note) => note.id),
+        bookIds: [...new Set(submitted.map((note) => note.bookId))],
+        chunkIds: [...new Set(submitted.map((note) => note.chunkId))],
+        count: submitted.length,
+        contextMode: context.contextMode,
+        contextSummary: {
+          chunks: context.chunks.map((chunk) => ({
+            bookId: chunk.bookId,
+            chunkId: chunk.chunkId,
+            title: chunk.title,
+            bookTitle: chunk.bookTitle,
+          })),
+          omittedChunks: context.omittedChunks,
+          noteCount: context.noteCount,
+        },
+      };
       await writeJsonl(annotationsPath, updated);
       invalidateAnnotationCache();
       try {
         await saveSessionLedger(ledger);
+        await mkdir(dataDir, { recursive: true });
+        await appendFile(submissionsPath, `${JSON.stringify({ ...submission, notes: submitted, context })}\n`, "utf8");
       } catch (error) {
         await writeJsonl(annotationsPath, annotations);
         invalidateAnnotationCache();
@@ -627,6 +702,7 @@ export async function submitUserNotes({
     return {
       submittedAt,
       sessionId,
+      submissionId: submission?.id || null,
       count: submitted.length,
       notes: submitted,
       context,
@@ -638,6 +714,24 @@ export async function submitUserNotes({
   });
 }
 
+export async function listSubmissions({ bookId, chunkId, sessionId, limit = 20 } = {}) {
+  const max = Math.min(Math.max(Number(limit) || 20, 1), 100);
+  return (await readAllSubmissions())
+    .filter((item) => !bookId || item.bookIds?.includes(bookId) || item.bookId === bookId)
+    .filter((item) => !chunkId || item.chunkIds?.includes(chunkId) || item.chunkId === chunkId)
+    .filter((item) => !sessionId || item.sessionId === sessionId)
+    .sort((a, b) => String(b.submittedAt || "").localeCompare(String(a.submittedAt || "")))
+    .slice(0, max)
+    .map(({ notes, context, ...summary }) => summary);
+}
+
+export async function readSubmission(submissionId) {
+  if (!submissionId) throw new Error("submissionId is required");
+  const submission = (await readAllSubmissions()).find((item) => item.id === submissionId);
+  if (!submission) throw new Error(`Unknown submissionId: ${submissionId}`);
+  return submission;
+}
+
 export async function replyToAnnotation(input) {
   const { parentId, note } = input;
   if (!parentId) throw new Error("parentId is required");
@@ -645,18 +739,23 @@ export async function replyToAnnotation(input) {
 
   const parent = (await readAllAnnotations()).find((annotation) => annotation.id === parentId);
   if (!parent) throw new Error(`Unknown parent annotation: ${parentId}`);
+  const author = input.author || "claude";
+  const parentStatus = parent.status || "published";
+  const status =
+    input.status ||
+    (isHumanAuthor(author) && isPrivateHumanAnnotation(parent) ? parentStatus : "published");
 
   return annotatePassage({
     bookId: input.bookId || parent.bookId,
     chunkId: input.chunkId || parent.chunkId,
     quote: input.quote || parent.quote,
     note,
-    author: input.author || "claude",
+    author,
     kind: input.kind || "reply",
     mood: input.mood || null,
     tags: input.tags || [],
     parentId,
-    status: "published",
+    status,
   });
 }
 

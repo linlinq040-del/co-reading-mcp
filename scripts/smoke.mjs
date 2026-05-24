@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from "node:child_process";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { appendFile, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
@@ -217,6 +217,25 @@ function contentJson(response) {
   return JSON.parse(response.result.content[0].text);
 }
 
+async function appendLocalUserNote({ id, note }) {
+  await appendFile(
+    path.join(tempDataDir, "annotations.jsonl"),
+    `${JSON.stringify({
+      id,
+      bookId: "anthropic-guidelines",
+      chunkId: "ch00",
+      quote: "Claude is trained by Anthropic",
+      note,
+      author: "user",
+      kind: "note",
+      status: "open",
+      parentId: null,
+      createdAt: new Date().toISOString(),
+    })}\n`,
+    "utf8",
+  );
+}
+
 await request("initialize", {});
 const list = await request("tools/call", { name: "reading_list_books", arguments: {} });
 const read = await request("tools/call", {
@@ -309,35 +328,40 @@ const badImportBookId = await request("tools/call", {
     title: "Bad Import",
   },
 });
+const hiddenBeforeSubmit = await request("tools/call", {
+  name: "reading_list_annotations",
+  arguments: { parentId: null, author: "user" },
+});
 const firstSubmit = await request("tools/call", {
   name: "reading_submit_user_notes",
   arguments: { bookId: "anthropic-guidelines", sessionId: "session-a" },
 });
-const sameSessionNote = await request("tools/call", {
+const visibleAfterSubmit = await request("tools/call", {
+  name: "reading_list_annotations",
+  arguments: { parentId: null, author: "user", status: "submitted" },
+});
+const mcpSpoofNote = await request("tools/call", {
   name: "reading_annotate_passage",
   arguments: {
     bookId: "anthropic-guidelines",
     chunkId: "ch00",
     quote: "Claude is trained by Anthropic",
-    note: "Another local user note in the same chunk.",
+    note: "MCP attempted to create a user-private note.",
     author: "user",
     status: "open",
   },
+});
+await appendLocalUserNote({
+  id: "ann_smoke_user_same_session",
+  note: "Another local user note in the same chunk.",
 });
 const sameSessionSubmit = await request("tools/call", {
   name: "reading_submit_user_notes",
   arguments: { bookId: "anthropic-guidelines", sessionId: "session-a" },
 });
-const newSessionNote = await request("tools/call", {
-  name: "reading_annotate_passage",
-  arguments: {
-    bookId: "anthropic-guidelines",
-    chunkId: "ch00",
-    quote: "Claude is trained by Anthropic",
-    note: "A later note after changing sessions.",
-    author: "user",
-    status: "open",
-  },
+await appendLocalUserNote({
+  id: "ann_smoke_user_new_session",
+  note: "A later note after changing sessions.",
 });
 const newSessionSubmit = await request("tools/call", {
   name: "reading_submit_user_notes",
@@ -354,6 +378,15 @@ const reply = await request("tools/call", {
 const replies = await request("tools/call", {
   name: "reading_list_annotations",
   arguments: { parentId: "ann_guidelines_user_001" },
+});
+const submissionsList = await request("tools/call", {
+  name: "reading_list_submissions",
+  arguments: { bookId: "anthropic-guidelines" },
+});
+const firstSubmission = contentJson(submissionsList)[0];
+const submissionDetail = await request("tools/call", {
+  name: "reading_read_submission",
+  arguments: { submissionId: firstSubmission?.id },
 });
 const badBookPath = await request("tools/call", {
   name: "reading_read_chunk",
@@ -464,6 +497,7 @@ const sseServer = spawn(process.execPath, [path.join(root, "src/server-sse.js")]
     ...process.env,
     READING_MCP_DATA_DIR: tempDataDir,
     MCP_SSE_PORT: String(ssePort),
+    MCP_SSE_HOST: "127.0.0.1",
     MCP_AUTH_TOKEN: "smoke-token",
   },
   stdio: ["ignore", "ignore", "pipe"],
@@ -593,16 +627,22 @@ if (!contentJson(markImportDone).finish?.celebration?.prompt) {
 if (!badImportBookId.error?.message.includes("bookId may only contain")) {
   throw new Error("reading_import_book did not reject unsafe bookId");
 }
+if (contentJson(hiddenBeforeSubmit).length !== 0) {
+  throw new Error("reading_list_annotations exposed open human notes before submit");
+}
 if (contentJson(firstSubmit).count !== 1) {
   throw new Error("reading_submit_user_notes did not submit the open user note");
+}
+if (!contentJson(visibleAfterSubmit).some((note) => note.id === "ann_guidelines_user_001")) {
+  throw new Error("reading_list_annotations did not expose submitted human notes");
 }
 if (!contentJson(firstSubmit).context.chunks[0]?.text.includes("Claude and the mission of Anthropic")) {
   throw new Error("first session submit did not include chunk text");
 }
-if (!contentJson(sameSessionNote).id) {
-  throw new Error("reading_annotate_passage did not create the same-session user note");
+if (contentJson(mcpSpoofNote).author !== "claude" || contentJson(mcpSpoofNote).status !== "published") {
+  throw new Error("reading_annotate_passage allowed MCP to spoof a private human note");
 }
-if (!contentJson(sameSessionNote).annotationIndexInBook || !contentJson(sameSessionNote).message.includes("Saved annotation")) {
+if (!contentJson(mcpSpoofNote).annotationIndexInBook || !contentJson(mcpSpoofNote).message.includes("Saved annotation")) {
   throw new Error("reading_annotate_passage did not return annotation index feedback");
 }
 if (contentJson(sameSessionSubmit).context.chunks.length !== 0) {
@@ -611,14 +651,17 @@ if (contentJson(sameSessionSubmit).context.chunks.length !== 0) {
 if (contentJson(sameSessionSubmit).context.omittedChunks[0]?.reason !== "already-sent-in-session") {
   throw new Error("same-session submit did not explain omitted chunk context");
 }
-if (!contentJson(newSessionNote).id) {
-  throw new Error("reading_annotate_passage did not create the new-session user note");
-}
 if (!contentJson(newSessionSubmit).context.chunks[0]?.text.includes("Claude and the mission of Anthropic")) {
   throw new Error("new-session submit did not re-include chunk text");
 }
+if (!contentJson(newSessionSubmit).submissionId) {
+  throw new Error("reading_submit_user_notes did not create a submission batch id");
+}
 if (contentJson(secondSubmit).count !== 0) {
   throw new Error("reading_submit_user_notes submitted the same note twice");
+}
+if (!firstSubmission?.id || !contentJson(submissionDetail).notes?.length) {
+  throw new Error("reading_list_submissions/read_submission did not expose submitted batches");
 }
 if (!reply.result?.content?.[0]?.text.includes('"parentId": "ann_guidelines_user_001"')) {
   throw new Error("reading_reply_to_annotation did not attach to the parent annotation");

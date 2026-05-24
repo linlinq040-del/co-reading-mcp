@@ -60,6 +60,55 @@ function fileToBase64(file) {
   });
 }
 
+function isMobileLayout() {
+  return window.matchMedia("(max-width: 980px)").matches;
+}
+
+function scrollToPanel(selector) {
+  if (!isMobileLayout()) return;
+  requestAnimationFrame(() => {
+    document.querySelector(selector)?.scrollIntoView({ block: "start", behavior: "smooth" });
+  });
+}
+
+function formatIdentity(author) {
+  const value = String(author || "unknown").toLowerCase();
+  if (value === "user" || value === "koshi") return "you";
+  if (value === "claude") return "Claude";
+  return value;
+}
+
+function replyClass(reply, root) {
+  const sameAuthor = String(reply.author || "").toLowerCase() === String(root.author || "").toLowerCase();
+  return sameAuthor ? "reply root-author" : "reply other-author";
+}
+
+function renderReply(reply, root) {
+  return `<div class="${replyClass(reply, root)}">
+    <p class="reply-body">${escapeHtml(reply.note)}</p>
+    <div class="note-meta">${escapeHtml(formatIdentity(reply.author))} · ${escapeHtml(reply.kind || "reply")}</div>
+  </div>`;
+}
+
+function renderThread(note, notes) {
+  const replies = notes.filter((item) => item.parentId === note.id);
+  return `<div class="thread">
+    ${replies.map((reply) => renderReply(reply, note)).join("")}
+    <form class="reply-form" data-parent-id="${escapeHtml(note.id)}">
+      <textarea rows="2" placeholder="Reply in this margin..."></textarea>
+      <button type="submit" class="primary-button">Reply</button>
+    </form>
+  </div>`;
+}
+
+function renderInlineNote(note, notes) {
+  return `<aside class="inline-note" data-note-id="${escapeHtml(note.id)}">
+    <p class="inline-note-kicker">${escapeHtml(formatIdentity(note.author))} · ${escapeHtml(note.kind || "note")}</p>
+    <p class="note-body">${escapeHtml(note.note)}</p>
+    ${renderThread(note, notes)}
+  </aside>`;
+}
+
 function renderBooks() {
   $("books").innerHTML = state.books
     .map((book) => {
@@ -89,16 +138,31 @@ function renderChunks() {
 function renderText() {
   if (!state.chunk) return;
   let html = escapeHtml(state.chunk.text);
-  for (const note of state.annotations.filter((item) => item.chunkId === state.chunkId && !item.parentId && item.quote)) {
+  const notes = state.annotations.filter((item) => item.chunkId === state.chunkId);
+  for (const note of notes.filter((item) => !item.parentId && item.quote)) {
     const quote = escapeHtml(note.quote);
     if (quote && html.includes(quote)) {
       html = html.replace(
         quote,
-        `<mark class="${note.id === state.activeAnnotationId ? "active" : ""}" data-note-id="${escapeHtml(note.id)}" title="${escapeHtml(note.note)}">${quote}</mark>`,
+        `<mark class="${note.id === state.activeAnnotationId ? "active" : ""}" data-note-id="${escapeHtml(note.id)}" title="${escapeHtml(note.note)}">${quote}</mark>${
+          note.id === state.activeAnnotationId ? renderInlineNote(note, notes) : ""
+        }`,
       );
     }
   }
   $("text").innerHTML = html;
+  bindMarkActions();
+}
+
+function bindMarkActions() {
+  document.querySelectorAll("mark[data-note-id]").forEach((mark) => {
+    const open = (event) => {
+      event.stopPropagation();
+      activateAnnotation(mark.dataset.noteId, { scroll: true });
+    };
+    mark.addEventListener("click", open);
+    mark.addEventListener("touchend", open);
+  });
 }
 
 function renderAnnotations() {
@@ -114,23 +178,10 @@ function renderAnnotations() {
       return `<article class="note-card ${(note.status || "") === "open" ? "open" : ""} ${expanded ? "active" : ""}" data-note-id="${escapeHtml(note.id)}" tabindex="0">
         <p class="note-quote">${escapeHtml(note.quote)}</p>
         <p class="note-body">${escapeHtml(note.note)}</p>
-        <div class="note-meta">${escapeHtml(note.author || "unknown")} · ${escapeHtml(note.kind || "note")} · ${escapeHtml(note.status || "published")}${replies.length ? ` · ${replies.length} replies` : ""}</div>
+        <div class="note-meta">${escapeHtml(formatIdentity(note.author))} · ${escapeHtml(note.kind || "note")} · ${escapeHtml(note.status || "published")}${replies.length ? ` · ${replies.length} replies` : ""}</div>
         ${
           expanded
-            ? `<div class="thread">
-                ${replies
-                  .map(
-                    (reply) => `<div class="reply ${reply.author === "user" ? "user" : ""}">
-                      <p class="reply-body">${escapeHtml(reply.note)}</p>
-                      <div class="note-meta">${escapeHtml(reply.author || "unknown")} · ${escapeHtml(reply.kind || "reply")}</div>
-                    </div>`,
-                  )
-                  .join("")}
-                <form class="reply-form" data-parent-id="${escapeHtml(note.id)}">
-                  <textarea rows="2" placeholder="Reply in this margin..."></textarea>
-                  <button type="submit" class="primary-button">Reply</button>
-                </form>
-              </div>`
+            ? renderThread(note, notes)
             : ""
         }
       </article>`;
@@ -140,8 +191,8 @@ function renderAnnotations() {
   $("submit-notes").disabled = openCount === 0;
   $("submit-notes").textContent = openCount ? `Send ${openCount} to Claude` : "Send to Claude";
   $("status").textContent = openCount
-    ? `${openCount} open note${openCount === 1 ? "" : "s"} waiting.`
-    : "Open notes stay local until you send them.";
+    ? `${openCount} private note${openCount === 1 ? "" : "s"} waiting.`
+    : "Private notes stay local until you send them.";
 }
 
 function updateSelectionAction() {
@@ -170,9 +221,13 @@ async function selectBook(bookId) {
   $("chunk-title").textContent = "Open a chapter to start reading";
   $("text").innerHTML = `<p class="empty">Choose a chapter. Highlight text to leave a note for Claude.</p>`;
   $("mark-read").disabled = true;
+  $("continue-reading").disabled = false;
+  document.body.classList.add("has-book");
+  document.body.classList.remove("has-chunk");
   renderBooks();
   renderChunks();
   renderAnnotations();
+  scrollToPanel(".chapters");
 }
 
 async function selectChunk(chunkId) {
@@ -182,9 +237,12 @@ async function selectChunk(chunkId) {
   $("chunk-file").textContent = state.chunk.chunk.id;
   $("chunk-title").textContent = state.chunk.chunk.title;
   $("mark-read").disabled = false;
+  $("continue-reading").disabled = false;
+  document.body.classList.add("has-chunk");
   renderChunks();
   renderText();
   renderAnnotations();
+  scrollToPanel(".reader");
 }
 
 function openNoteForm(quote) {
@@ -201,7 +259,7 @@ function activateAnnotation(noteId, { scroll = false } = {}) {
   renderText();
   renderAnnotations();
   if (scroll) {
-    document.querySelector(`.note-card[data-note-id="${CSS.escape(noteId)}"]`)?.scrollIntoView({
+    document.querySelector(`.inline-note[data-note-id="${CSS.escape(noteId)}"], .note-card[data-note-id="${CSS.escape(noteId)}"]`)?.scrollIntoView({
       block: "nearest",
       behavior: "smooth",
     });
@@ -305,7 +363,7 @@ $("margins").addEventListener("submit", async (event) => {
 });
 
 $("submit-notes").addEventListener("click", async () => {
-  await api("/api/submit-notes", {
+  const result = await api("/api/submit-notes", {
     method: "POST",
     body: {
       bookId: state.bookId,
@@ -314,6 +372,9 @@ $("submit-notes").addEventListener("click", async () => {
     },
   });
   await refreshCurrent();
+  $("status").textContent = result.submissionId
+    ? `Shared ${result.count} note${result.count === 1 ? "" : "s"} with Claude. Submission ${result.submissionId}.`
+    : result.message || "No private notes to share.";
 });
 
 $("mark-read").addEventListener("click", async () => {
@@ -322,6 +383,17 @@ $("mark-read").addEventListener("click", async () => {
     body: { bookId: state.bookId, chunkId: state.chunkId },
   });
   await refreshCurrent();
+});
+
+$("continue-reading").addEventListener("click", async () => {
+  if (!state.bookId) return;
+  const next = await api(`/api/continue?bookId=${encodeURIComponent(state.bookId)}`);
+  const chunkId = next?.chunk?.chunk?.id || next?.chunk?.chunkId || next?.chunk?.id;
+  if (!chunkId) {
+    $("status").textContent = next?.message || "Nothing left to continue.";
+    return;
+  }
+  await selectChunk(chunkId);
 });
 
 $("refresh").addEventListener("click", () => refreshCurrent().catch(showError));
@@ -335,19 +407,24 @@ $("import-file").addEventListener("change", async (event) => {
   if (!files.length) return;
   $("import-book").disabled = true;
   try {
+    const imported = [];
     for (const file of files) {
       $("status").textContent = `Importing ${file.name}...`;
-      await api("/api/import", {
+      const manifest = await api("/api/import", {
         method: "POST",
         body: {
           filename: file.name,
           dataBase64: await fileToBase64(file),
         },
       });
+      imported.push(manifest);
     }
     $("status").textContent = files.length === 1 ? `Imported ${files[0].name}.` : `Imported ${files.length} books.`;
     await loadBooks();
     renderBooks();
+    if (imported.length === 1 && imported[0]?.bookId) {
+      await selectBook(imported[0].bookId);
+    }
   } catch (error) {
     showError(error);
   } finally {

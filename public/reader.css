@@ -61,6 +61,13 @@ button {
   margin-bottom: 24px;
 }
 
+.reader-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .topbar-actions {
   display: flex;
   gap: 8px;
@@ -211,6 +218,30 @@ h2 {
   background: var(--panel-strong);
 }
 
+.inline-note {
+  display: block;
+  margin: 14px 0 18px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--accent);
+  border-radius: 16px;
+  background: var(--panel-strong);
+  box-shadow: var(--shadow);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  white-space: normal;
+}
+
+.inline-note-kicker {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .note-quote {
   margin: 0 0 10px;
   padding-left: 10px;
@@ -239,14 +270,13 @@ h2 {
 
 .reply {
   padding: 10px 12px;
-  border-left: 3px solid var(--line);
+  border-left: 3px solid transparent;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.035);
+  background: transparent;
 }
 
-.reply.user {
-  border-left-color: var(--accent);
-  background: var(--accent-soft);
+.reply.other-author {
+  background: rgba(0, 0, 0, 0.035);
 }
 
 .reply-body {
@@ -367,9 +397,64 @@ button:disabled {
     border-bottom: 1px solid var(--line);
   }
 
+  .sidebar,
+  .chapters,
+  .reader {
+    padding: 22px 18px;
+  }
+
+  .topbar,
+  .panel-head,
+  .reader-head {
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .books,
+  .chunk-list {
+    grid-template-columns: 1fr;
+  }
+
+  body.has-book .books {
+    max-height: 42vh;
+    overflow: auto;
+    padding-right: 2px;
+  }
+
+  body.has-chunk .chunk-list {
+    max-height: 40vh;
+    overflow: auto;
+    padding-right: 2px;
+  }
+
   .reader {
     grid-template-columns: 1fr;
     overflow: visible;
+    gap: 16px;
+  }
+
+  .reader-head {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    padding: 12px 0;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(16px);
+  }
+
+  .reader-actions {
+    flex: 0 0 auto;
+  }
+
+  .reader-actions .secondary-button {
+    min-height: 36px;
+    padding: 0 12px;
+  }
+
+  .text {
+    padding-bottom: 140px;
+    font-size: 22px;
+    line-height: 1.82;
   }
 
   .note-form,
@@ -381,6 +466,8 @@ button:disabled {
   .submitbar {
     align-items: stretch;
     flex-direction: column;
+    z-index: 9;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 
   .submit-actions {
@@ -389,6 +476,15 @@ button:disabled {
 
   .margins {
     overflow: visible;
+  }
+
+  .inline-note {
+    margin: 12px 0 16px;
+    font-size: 15px;
+  }
+
+  .reply-form {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -415,6 +511,10 @@ button:disabled {
   }
 
   .reply {
+    background: transparent;
+  }
+
+  .reply.other-author {
     background: rgba(255, 255, 255, 0.07);
   }
 }

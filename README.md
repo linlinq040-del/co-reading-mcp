@@ -12,7 +12,7 @@ A local MCP server that gives Claude a durable reading room:
 - track reading progress
 - return a small finish ritual when a book is completed
 
-The goal is not one-shot summarization. The goal is a shared reading surface where a human and Claude can both read, leave anchored notes, and resume smoothly.
+The goal is not one-shot summarization. The goal is a shared reading surface where a human and Claude can both read, leave anchored notes, and resume smoothly. Human notes can also stay private until the reader chooses to share them with Claude.
 
 For a step-by-step setup and usage flow, see [docs/user-guide.md](docs/user-guide.md).
 
@@ -188,6 +188,8 @@ data/
 - `reading_annotate_passage`
 - `reading_list_annotations`
 - `reading_submit_user_notes`
+- `reading_list_submissions`
+- `reading_read_submission`
 - `reading_reply_to_annotation`
 - `reading_mark_read`
 - `reading_get_progress`

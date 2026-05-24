@@ -159,6 +159,8 @@ Input:
 
 All fields are optional except `bookId` in most practical use.
 
+By default this tool hides human notes with `status: "open"`, `"private"`, or `"draft"` and hides replies under those private notes. This lets a reader save notes and leave without exposing them to Claude. A trusted local UI can pass `includePrivate: true`; Claude-facing MCP clients should not.
+
 ## `reading_submit_user_notes`
 
 Input:
@@ -171,9 +173,9 @@ Input:
 }
 ```
 
-Finds all user annotations with `status: "open"`, returns them as one batch for Claude, and rewrites them to `status: "submitted"` so the same notes are not sent again.
+Finds all user annotations with `status: "open"`, `"private"`, or `"draft"`, returns them as one batch for Claude, and rewrites them to `status: "submitted"` so the same notes are not sent again.
 
-This is the tool a companion app should call when the user taps “Send notes to Claude”.
+This is the tool a companion app or Claude-facing integration should call when the user taps “Send notes to Claude”. In the built-in browser reader, this action publishes the private notes so Claude can retrieve them through MCP and returns the context package to the HTTP caller; it is not a push notification into claude.ai by itself.
 
 By default, `contextMode` is `chunk-once-per-session`: the first submitted user note for a chunk includes that chunk's full text in `context.chunks`. Later notes for the same chunk and `sessionId` only send the new notes, with the repeated chunk listed in `context.omittedChunks`. A new `sessionId` starts fresh and includes the chunk again.
 
@@ -184,6 +186,28 @@ Supported context modes:
 - `notes-only`: send only the submitted notes and quote anchors
 
 Set `forceChunkContext: true` to re-send chunk text inside the same session.
+
+Each successful submit also writes a submission batch. Use `reading_list_submissions` to find recent shared batches and `reading_read_submission` to read one batch with notes and context.
+
+## `reading_list_submissions`
+
+Input:
+
+```json
+{ "bookId": "anthropic-guidelines", "limit": 10 }
+```
+
+Returns recent human note submission summaries. The summary includes `id`, `submittedAt`, note ids, chunk ids, and a compact context summary.
+
+## `reading_read_submission`
+
+Input:
+
+```json
+{ "submissionId": "sub_..." }
+```
+
+Returns one submitted batch with its notes and context package.
 
 ## `reading_reply_to_annotation`
 

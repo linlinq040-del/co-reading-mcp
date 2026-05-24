@@ -37,7 +37,10 @@
             <p id="chunk-file" class="eyebrow">No chapter selected</p>
             <h2 id="chunk-title">Open a chapter to start reading</h2>
           </div>
-          <button id="mark-read" class="secondary-button" disabled>Mark read</button>
+          <div class="reader-actions">
+            <button id="continue-reading" class="secondary-button" disabled>Continue</button>
+            <button id="mark-read" class="secondary-button" disabled>Mark read</button>
+          </div>
         </header>
 
         <article id="text" class="text">
@@ -56,7 +59,7 @@
         </form>
 
         <footer class="submitbar">
-          <span id="status">Open notes stay local until you send them.</span>
+          <span id="status">Private notes stay local until you send them.</span>
           <div class="submit-actions">
             <button id="note-selection" class="secondary-button" disabled>Note selection</button>
             <button id="submit-notes" class="primary-button" disabled>Send to Claude</button>

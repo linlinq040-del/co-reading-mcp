@@ -64,11 +64,11 @@ export async function handleApi(req, res, url, options = {}) {
   const maxBytes = options.maxBodyBytes || defaultMaxBodyBytes;
 
   if (req.method === "GET" && parts.length === 2 && parts[1] === "books") {
-    return sendJson(res, 200, await listBooks());
+    return sendJson(res, 200, await listBooks({ includePrivate: true }));
   }
 
   if (req.method === "GET" && parts.length === 4 && parts[1] === "books" && parts[3] === "chunks") {
-    return sendJson(res, 200, await listChunks(parts[2]));
+    return sendJson(res, 200, await listChunks(parts[2], { includePrivate: true }));
   }
 
   if (req.method === "GET" && parts.length === 5 && parts[1] === "books" && parts[3] === "chunks") {
@@ -90,6 +90,7 @@ export async function handleApi(req, res, url, options = {}) {
         author: url.searchParams.get("author") || undefined,
         status: url.searchParams.get("status") || undefined,
         parentId: url.searchParams.has("parentId") ? url.searchParams.get("parentId") : undefined,
+        includePrivate: true,
       }),
     );
   }
