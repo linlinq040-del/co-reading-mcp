@@ -289,7 +289,7 @@ Input:
 { "cardId": "card_..." }
 ```
 
-Returns the selected card as `image/svg+xml` content so Claude can view the card image directly. The text part is only a short caption.
+Returns the selected card as image content so Claude can view it directly. If Playwright Chromium is installed, the card is rendered as a polished PNG from the same HTML/CSS card template used by the reader; otherwise the server falls back to an SVG image. The text part is only a short caption.
 
 ## `reading_dismiss_card`
 

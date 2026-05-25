@@ -28,7 +28,8 @@
     "smoke": "node scripts/smoke.mjs",
     "smoke:cards": "node scripts/card-smoke.mjs",
     "import:text": "python3 scripts/import_text.py",
-    "import:epub": "python3 scripts/import_epub.py"
+    "import:epub": "python3 scripts/import_epub.py",
+    "install:card-renderer": "npx playwright install chromium"
   },
   "engines": {
     "node": ">=18"

@@ -705,8 +705,11 @@ if (!contentJson(cardInbox).some((card) => card.id === contentJson(collectedCard
 if (!contentJson(cardCollection).items?.some((card) => card.id === contentJson(collectedCard).id)) {
   throw new Error("reading_card_collection did not page collected cards");
 }
-if (openedCard.result?.content?.[1]?.type !== "image" || openedCard.result.content[1].mimeType !== "image/svg+xml") {
-  throw new Error("reading_open_card did not return an SVG image");
+if (
+  openedCard.result?.content?.[1]?.type !== "image" ||
+  !["image/png", "image/svg+xml"].includes(openedCard.result.content[1].mimeType)
+) {
+  throw new Error("reading_open_card did not return a card image");
 }
 if (contentJson(dismissedCard).status !== "dismissed" || contentJson(dismissedInbox).some((card) => card.id === contentJson(collectedCard).id)) {
   throw new Error("reading_dismiss_card did not clear the inbox item");

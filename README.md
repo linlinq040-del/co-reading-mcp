@@ -221,7 +221,14 @@ The bundled reader is intentionally small: it is a reference UI, not a required 
 
 Human notes are saved as open local notes first. Pressing "Send to Claude" calls `reading_submit_user_notes`, includes chunk context according to the session policy, marks those notes submitted, and avoids resending the same open notes.
 
-Small ritual cards/bookmarks can be collected with `reading_collect_card`. Claude can then use `reading_card_inbox` like a quiet bookmark inbox, open a visual SVG card with `reading_open_card`, or clear it with `reading_dismiss_card`. They are meant for completed sections, shared-margin moments, or quiet passages worth carrying forward.
+Small ritual cards/bookmarks can be collected with `reading_collect_card`. Claude can then use `reading_card_inbox` like a quiet bookmark inbox, open a visual card with `reading_open_card`, or clear it with `reading_dismiss_card`. They are meant for completed sections, shared-margin moments, or quiet passages worth carrying forward.
+
+By default the card renderer stays zero-dependency and falls back to SVG. For the polished PNG cards, install Playwright's Chromium renderer once:
+
+```sh
+npm i -D playwright
+npm run install:card-renderer
+```
 
 ## Privacy
 

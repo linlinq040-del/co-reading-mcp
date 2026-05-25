@@ -21,7 +21,7 @@ import {
   submitUserNotes,
 } from "./store.js";
 import { importBook } from "./importer.js";
-import { renderCardSvg } from "./card-renderer.js";
+import { renderCardPng, renderCardSvg } from "./card-renderer.js";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const publicDir = path.join(ROOT, "public");
@@ -143,6 +143,13 @@ export async function handleApi(req, res, url, options = {}) {
     const card = await readCard(parts[2]);
     res.writeHead(200, { "content-type": "image/svg+xml; charset=utf-8" });
     res.end(renderCardSvg(card));
+    return;
+  }
+
+  if (req.method === "GET" && parts.length === 4 && parts[1] === "cards" && parts[3] === "image.png") {
+    const card = await readCard(parts[2]);
+    res.writeHead(200, { "content-type": "image/png" });
+    res.end(renderCardPng(card));
     return;
   }
 
