@@ -84,8 +84,9 @@ The same port serves the human reader, REST API, and remote MCP transports:
 - `https://your-domain.example/`: reference reader UI
 - `https://your-domain.example/?token=change-me`: reader UI with auth saved in local storage and a cookie
 - `https://your-domain.example/api/*`: reader REST API
-- `https://your-domain.example/sse`: MCP SSE transport
-- `https://your-domain.example/mcp`: MCP JSON-RPC over POST
+- `https://your-domain.example/mcp`: remote MCP JSON-RPC endpoint for custom connectors
+- `https://your-domain.example/sse`: legacy MCP SSE transport
+- `https://your-domain.example/.well-known/oauth-protected-resource/mcp`: MCP resource metadata for connector discovery
 
 Environment variables:
 
@@ -96,7 +97,9 @@ Environment variables:
 - `MCP_MAX_BODY_BYTES`: max JSON-RPC POST body size, default `25000000`
 - `READING_IMPORT_MAX_BYTES`: max EPUB/TXT upload size, default `25000000`
 
-Do not expose the remote server on the public internet without HTTPS and `MCP_AUTH_TOKEN`. When `MCP_AUTH_TOKEN` is set, the reader, static assets, `/api/*`, `/sse`, `/messages`, `/mcp`, and `/health` require the token. Open the reader once with `/?token=...`; the server sets a same-site cookie and the reader stores the token for API calls. If you use nginx, Caddy, or cloudflared, proxy `/`, `/api/*`, `/sse`, `/messages`, and `/mcp` to the same local process and make sure streaming responses are not buffered.
+For Claude custom connectors, prefer the `/mcp` URL. `/sse` remains available for older MCP clients that still expect the SSE + `/messages` flow.
+
+Do not expose the remote server on the public internet without HTTPS and `MCP_AUTH_TOKEN`. When `MCP_AUTH_TOKEN` is set, the reader, static assets, `/api/*`, `/sse`, `/messages`, `/mcp`, and `/health` require the token. Open the reader once with `/?token=...`; the server sets a same-site cookie and the reader stores the token for API calls. If you use nginx, Caddy, or cloudflared, proxy `/`, `/api/*`, `/sse`, `/messages`, `/mcp`, and `/.well-known/*` to the same local process and make sure streaming responses are not buffered.
 
 ## Import Books
 

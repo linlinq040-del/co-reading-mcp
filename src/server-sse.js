@@ -13,6 +13,7 @@ const corsOrigin = process.env.MCP_CORS_ORIGIN || "*";
 const maxBodyBytes = Number(process.env.MCP_MAX_BODY_BYTES || process.env.READING_IMPORT_MAX_BYTES || 25_000_000);
 const sessions = new Map();
 const authCookieName = "co_reading_token";
+const protocolVersion = "2024-11-05";
 
 function sendSse(res, event, data) {
   res.write(`event: ${event}\n`);
@@ -22,7 +23,8 @@ function sendSse(res, event, data) {
 function setCors(res) {
   res.setHeader("access-control-allow-origin", corsOrigin);
   res.setHeader("access-control-allow-methods", "GET, POST, OPTIONS");
-  res.setHeader("access-control-allow-headers", "content-type, authorization");
+  res.setHeader("access-control-allow-headers", "content-type, authorization, mcp-protocol-version");
+  res.setHeader("access-control-expose-headers", "mcp-protocol-version, www-authenticate");
 }
 
 function cookieToken(req) {
@@ -51,15 +53,48 @@ function authorized(req, url) {
   return decodeURIComponent(cookieToken(req)) === authToken;
 }
 
-function endpointFor(req, sessionId) {
+function externalBaseUrl(req) {
   const forwardedProto = req.headers["x-forwarded-proto"];
   const protocol = Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto || "http";
   const hostHeader = req.headers["x-forwarded-host"] || req.headers.host || `${host}:${port}`;
-  return `${protocol}://${hostHeader}/messages?sessionId=${encodeURIComponent(sessionId)}`;
+  return `${protocol}://${hostHeader}`;
+}
+
+function endpointFor(req, sessionId) {
+  return `${externalBaseUrl(req)}/messages?sessionId=${encodeURIComponent(sessionId)}`;
 }
 
 function rpcError(id, code, message) {
   return { jsonrpc: "2.0", id, error: { code, message } };
+}
+
+function mcpResourceMetadata(req) {
+  const baseUrl = externalBaseUrl(req);
+  return {
+    resource: `${baseUrl}/mcp`,
+    resource_name: "Co-Reading MCP",
+    resource_documentation: `${baseUrl}/`,
+    bearer_methods_supported: ["header"],
+    scopes_supported: [],
+    authorization_servers: [],
+  };
+}
+
+function sendMcpJson(res, status, value) {
+  res.writeHead(status, {
+    "content-type": "application/json; charset=utf-8",
+    "mcp-protocol-version": protocolVersion,
+  });
+  res.end(JSON.stringify(value, null, 2));
+}
+
+function sendUnauthorized(req, res) {
+  const metadataUrl = `${externalBaseUrl(req)}/.well-known/oauth-protected-resource/mcp`;
+  res.writeHead(401, {
+    "content-type": "application/json; charset=utf-8",
+    "www-authenticate": `Bearer resource_metadata="${metadataUrl}"`,
+  });
+  res.end(JSON.stringify({ error: "Unauthorized" }, null, 2));
 }
 
 async function route(req, res) {
@@ -74,6 +109,16 @@ async function route(req, res) {
   if (authToken && url.searchParams.get("token") === authToken) {
     setAuthCookie(res, authToken);
   }
+
+  if (
+    req.method === "GET" &&
+    (url.pathname === "/.well-known/oauth-protected-resource" ||
+      url.pathname === "/.well-known/oauth-protected-resource/mcp")
+  ) {
+    sendJson(res, 200, mcpResourceMetadata(req));
+    return;
+  }
+
   const protectedRoute =
     Boolean(authToken) ||
     url.pathname.startsWith("/api/") ||
@@ -83,7 +128,7 @@ async function route(req, res) {
     url.pathname === "/health";
 
   if (protectedRoute && !authorized(req, url)) {
-    sendJson(res, 401, { error: "Unauthorized" });
+    sendUnauthorized(req, res);
     return;
   }
 
@@ -96,16 +141,26 @@ async function route(req, res) {
     try {
       message = await readBody(req, { maxBytes: maxBodyBytes, allowEmpty: false });
     } catch (error) {
-      sendJson(res, 400, { error: error.message || "Invalid JSON body" });
+      sendMcpJson(res, 400, { error: error.message || "Invalid JSON body" });
       return;
     }
 
     try {
       const response = await handle(message);
-      sendJson(res, 200, response || { accepted: true });
+      sendMcpJson(res, 200, response || { accepted: true });
     } catch (error) {
-      sendJson(res, 200, rpcError(message?.id ?? null, -32000, error.message || String(error)));
+      sendMcpJson(res, 200, rpcError(message?.id ?? null, -32000, error.message || String(error)));
     }
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/mcp") {
+    res.writeHead(405, {
+      allow: "POST",
+      "content-type": "application/json; charset=utf-8",
+      "mcp-protocol-version": protocolVersion,
+    });
+    res.end(JSON.stringify({ error: "Method Not Allowed", expected: "POST JSON-RPC" }, null, 2));
     return;
   }
 

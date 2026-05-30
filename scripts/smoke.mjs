@@ -641,8 +641,13 @@ const sseCssWithCookie = await fetch(`http://127.0.0.1:${ssePort}/reader.css`, {
   headers: { cookie: sseCookie },
 });
 const sseApiUnauthorized = await fetch(`http://127.0.0.1:${ssePort}/api/books`);
+const sseUnauthorizedMcp = await fetch(`http://127.0.0.1:${ssePort}/mcp`);
+const sseMetadata = await fetch(`http://127.0.0.1:${ssePort}/.well-known/oauth-protected-resource/mcp`);
 const sseApiBooks = await fetchJson("/api/books", {
   baseUrl: `http://127.0.0.1:${ssePort}`,
+  headers: { Authorization: "Bearer smoke-token" },
+});
+const sseMcpGet = await fetch(`http://127.0.0.1:${ssePort}/mcp`, {
   headers: { Authorization: "Bearer smoke-token" },
 });
 const sseMcpPost = await fetch(`http://127.0.0.1:${ssePort}/mcp`, {
@@ -823,8 +828,17 @@ if (!sseCookie.includes("co_reading_token=") || !sseCssWithCookie.ok) {
 if (sseApiUnauthorized.status !== 401) {
   throw new Error("SSE process did not protect REST API with MCP_AUTH_TOKEN");
 }
+if (sseUnauthorizedMcp.status !== 401 || !sseUnauthorizedMcp.headers.get("www-authenticate")?.includes("oauth-protected-resource")) {
+  throw new Error("SSE process did not advertise MCP resource metadata on unauthorized MCP requests");
+}
+if (!sseMetadata.ok || (await sseMetadata.json()).resource !== `http://127.0.0.1:${ssePort}/mcp`) {
+  throw new Error("SSE process did not serve MCP protected resource metadata");
+}
 if (!sseApiBooks.some((book) => book.bookId === "anthropic-guidelines")) {
   throw new Error("SSE process did not serve authenticated REST API");
+}
+if (sseMcpGet.status !== 405 || sseMcpGet.headers.get("allow") !== "POST") {
+  throw new Error("SSE process did not return a connector-friendly GET /mcp response");
 }
 if (!sseMcpPost.ok || sseMcpMessage.result?.serverInfo?.name !== "co-reading-mcp") {
   throw new Error("SSE process did not serve MCP JSON-RPC POST endpoint");
