@@ -108,6 +108,10 @@ async function route(req, res) {
   const url = new URL(req.url || "/", `http://${req.headers.host || `${host}:${port}`}`);
   if (authToken && url.searchParams.get("token") === authToken) {
     setAuthCookie(res, authToken);
+    url.searchParams.delete("token");
+    res.writeHead(302, { location: url.pathname + url.search });
+    res.end();
+    return;
   }
 
   if (
@@ -179,7 +183,20 @@ async function route(req, res) {
     sendSse(res, "endpoint", endpointFor(req, sessionId));
 
     const keepAlive = setInterval(() => {
-      if (sessions.has(sessionId)) res.write(": ping\n\n");
+      if (!sessions.has(sessionId)) {
+        clearInterval(keepAlive);
+        return;
+      }
+      try {
+        const ok = res.write(": ping\n\n");
+        if (!ok && res.destroyed) {
+          clearInterval(keepAlive);
+          sessions.delete(sessionId);
+        }
+      } catch {
+        clearInterval(keepAlive);
+        sessions.delete(sessionId);
+      }
     }, 30_000);
 
     req.on("close", () => {

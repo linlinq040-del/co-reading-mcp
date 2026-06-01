@@ -1,4 +1,4 @@
-import { appendFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { appendFile, cp, mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
@@ -638,7 +638,16 @@ export async function deleteBook(bookId) {
     }
 
     await mkdir(archiveDir, { recursive: true });
-    await rename(requestedBookDir, archivedBookDir);
+    try {
+      await rename(requestedBookDir, archivedBookDir);
+    } catch (renameErr) {
+      if (renameErr.code === "EXDEV") {
+        await cp(requestedBookDir, archivedBookDir, { recursive: true });
+        await rm(requestedBookDir, { recursive: true, force: true });
+      } else {
+        throw renameErr;
+      }
+    }
     await writeJson(path.join(archiveDir, "deleted-book-data.json"), {
       deletedAt: now,
       requestedBookId: bookId,
@@ -1056,8 +1065,10 @@ export async function listCards({ bookId, chunkId, source, scope, limit = 20, of
 }
 
 export async function listCardInbox({ bookId, limit = 10 } = {}) {
-  return (await listCards({ bookId, limit }))
+  const max = Math.min(Math.max(Number(limit) || 10, 1), 100);
+  return (await listCards({ bookId, limit: 10_000, offset: 0 }))
     .filter((card) => (card.status || "new") !== "dismissed")
+    .slice(0, max)
     .map((card) => ({
       id: card.id,
       message: card.kicker || "收获了一枚回声书签",
@@ -1312,9 +1323,9 @@ export async function submitUserNotes({
       await writeJsonl(annotationsPath, updated);
       invalidateAnnotationCache();
       try {
-        await saveSessionLedger(ledger);
         await mkdir(dataDir, { recursive: true });
         await appendFile(submissionsPath, `${JSON.stringify({ ...submission, notes: submitted, context })}\n`, "utf8");
+        await saveSessionLedger(ledger);
       } catch (error) {
         await writeJsonl(annotationsPath, annotations);
         invalidateAnnotationCache();

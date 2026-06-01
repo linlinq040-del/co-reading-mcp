@@ -169,6 +169,7 @@ async function runImport(filePath, options) {
     const result = await execFileAsync("python3", args, {
       cwd: ROOT,
       maxBuffer: maxImportOutputBytes,
+      timeout: 60_000,
     });
     stdout = result.stdout || "";
     stderr = result.stderr || "";
