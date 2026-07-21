@@ -19,6 +19,10 @@ const state = {
   refreshInFlight: false,
   composing: false,
   replyDrafts: {},
+  spreadPage: 0,
+  spreadPages: 1,
+  spreadTouchX: null,
+  pageTurning: false,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -244,6 +248,7 @@ function renderText() {
   html += escapeHtml(text.slice(cursor));
   $("text").innerHTML = html;
   bindMarkActions();
+  requestAnimationFrame(() => updatePageTurner());
   if (isBookSpreadLayout() && state.activeAnnotationId) {
     showSpreadAnnotation(state.activeAnnotationId);
   } else {
@@ -272,6 +277,72 @@ function spreadPopover() {
 function hideSpreadAnnotation() {
   const popover = document.querySelector(".spread-annotation-popover");
   if (popover) popover.hidden = true;
+}
+
+function spreadStepSize(text = $("text")) {
+  const style = getComputedStyle(text);
+  const columnWidth = Number.parseFloat(style.columnWidth);
+  const columnGap = Number.parseFloat(style.columnGap);
+  return Number.isFinite(columnWidth) && Number.isFinite(columnGap)
+    ? Math.max(1, 2 * (columnWidth + columnGap))
+    : Math.max(text.clientWidth, 1);
+}
+
+function updatePageTurner({ reset = false } = {}) {
+  const text = $("text");
+  const turner = $("page-turner");
+  if (!text || !turner) return;
+  const active = isBookSpreadLayout() && Boolean(state.chunk);
+  turner.classList.toggle("active", active);
+  if (!active) return;
+
+  const step = spreadStepSize(text);
+  state.spreadPages = Math.max(1, Math.ceil(Math.max(0, text.scrollWidth - text.clientWidth - 2) / step) + 1);
+  if (reset) {
+    state.spreadPage = 0;
+    text.scrollLeft = 0;
+  } else {
+    state.spreadPage = Math.min(state.spreadPage, state.spreadPages - 1);
+  }
+  $("page-number").textContent = `${state.spreadPage + 1} / ${state.spreadPages}`;
+  $("page-prev").disabled = state.spreadPage <= 0 && !state.chunk?.prevId;
+  $("page-next").disabled = state.spreadPage >= state.spreadPages - 1 && !state.chunk?.nextId;
+}
+
+function turnSpread(direction) {
+  if (!isBookSpreadLayout() || state.pageTurning) return;
+  const target = Math.max(0, Math.min(state.spreadPages - 1, state.spreadPage + direction));
+  const boundaryChunkId = direction > 0 ? state.chunk?.nextId : state.chunk?.prevId;
+  if (target === state.spreadPage && !boundaryChunkId) return;
+
+  const text = $("text");
+  state.pageTurning = true;
+  text.classList.add(direction > 0 ? "turning-next" : "turning-prev");
+  setTimeout(async () => {
+    if (target !== state.spreadPage) {
+      text.scrollLeft = target * spreadStepSize(text);
+      state.spreadPage = target;
+      updatePageTurner();
+      return;
+    }
+    try {
+      await selectChunk(boundaryChunkId);
+      requestAnimationFrame(() => {
+        updatePageTurner({ reset: true });
+        if (direction < 0) {
+          state.spreadPage = Math.max(0, state.spreadPages - 1);
+          $("text").scrollLeft = state.spreadPage * spreadStepSize($("text"));
+          updatePageTurner();
+        }
+      });
+    } catch (error) {
+      showError(error);
+    }
+  }, 245);
+  setTimeout(() => {
+    text.classList.remove("turning-next", "turning-prev");
+    state.pageTurning = false;
+  }, 620);
 }
 
 function showSpreadAnnotation(noteId) {
@@ -633,6 +704,7 @@ async function selectChunk(chunkId) {
   renderText();
   renderAnnotations();
   refreshCards();
+  requestAnimationFrame(() => updatePageTurner({ reset: true }));
   scrollToPanel(".reader");
 }
 
@@ -725,6 +797,19 @@ $("text").addEventListener("mouseup", () => {
 $("text").addEventListener("touchend", () => {
   setTimeout(updateSelectionAction, 80);
 });
+
+$("text").addEventListener("touchstart", (event) => {
+  if (!isBookSpreadLayout() || event.touches.length !== 1) return;
+  state.spreadTouchX = event.touches[0].clientX;
+}, { passive: true });
+
+$("text").addEventListener("touchend", (event) => {
+  if (!isBookSpreadLayout() || state.spreadTouchX === null || !event.changedTouches.length) return;
+  const distance = event.changedTouches[0].clientX - state.spreadTouchX;
+  state.spreadTouchX = null;
+  if (Math.abs(distance) < 56 || window.getSelection()?.toString()) return;
+  turnSpread(distance < 0 ? 1 : -1);
+}, { passive: true });
 
 $("text").addEventListener("click", (event) => {
   const deleteButton = event.target.closest("[data-delete-note]");
@@ -859,6 +944,13 @@ $("continue-reading").addEventListener("click", async () => {
 });
 
 $("refresh").addEventListener("click", () => refreshCurrent({ force: true }).catch(showError));
+
+$("page-prev").addEventListener("click", () => turnSpread(-1));
+$("page-next").addEventListener("click", () => turnSpread(1));
+
+window.addEventListener("resize", () => {
+  requestAnimationFrame(() => updatePageTurner({ reset: true }));
+});
 
 $("back-to-library").addEventListener("click", () => {
   document.body.classList.remove("has-book", "has-chunk");

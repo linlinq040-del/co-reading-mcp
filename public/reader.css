@@ -520,6 +520,10 @@ h2 {
   vertical-align: 0.12em;
 }
 
+.page-turner {
+  display: none;
+}
+
 .empty {
   color: var(--muted);
   font-family: inherit;
@@ -1133,10 +1137,11 @@ button:disabled {
   }
 
   .text {
+    position: relative;
     grid-column: 1;
     height: calc(100svh - 168px);
     min-height: 500px;
-    overflow-x: auto;
+    overflow-x: hidden;
     overflow-y: hidden;
     column-width: calc((100vw - clamp(246px, 25vw, 340px)) / 2);
     column-gap: clamp(54px, 6vw, 78px);
@@ -1148,13 +1153,92 @@ button:disabled {
       linear-gradient(90deg, transparent 49.2%, rgba(94, 70, 48, 0.08) 49.8%, rgba(255, 255, 255, 0.52) 50%, rgba(94, 70, 48, 0.08) 50.2%, transparent 50.8%),
       rgba(255, 252, 246, 0.84);
     box-shadow: 0 24px 60px rgba(75, 53, 34, 0.13), inset 0 0 50px rgba(122, 94, 67, 0.035);
-    scroll-behavior: smooth;
-    scrollbar-width: thin;
-    scrollbar-color: var(--accent-soft) transparent;
+    scroll-behavior: auto;
+    scrollbar-width: none;
     font-size: clamp(22px, 1.85vw, 25px);
     line-height: 1.92;
     text-align: justify;
     text-justify: inter-ideograph;
+    perspective: 1800px;
+  }
+
+  .text::-webkit-scrollbar {
+    display: none;
+  }
+
+  .text.turning-next::after,
+  .text.turning-prev::after {
+    position: absolute;
+    z-index: 12;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    border-radius: 10px;
+    background:
+      linear-gradient(90deg, rgba(77, 55, 37, 0.14), transparent 20%, rgba(255, 252, 246, 0.96) 72%),
+      #fffaf2;
+    box-shadow: 0 8px 35px rgba(65, 45, 29, 0.2);
+    content: "";
+    pointer-events: none;
+    backface-visibility: hidden;
+  }
+
+  .text.turning-next::after {
+    right: 0;
+    transform-origin: left center;
+    animation: turn-page-next 620ms cubic-bezier(0.58, 0.05, 0.22, 0.99) both;
+  }
+
+  .text.turning-prev::after {
+    left: 0;
+    transform-origin: right center;
+    animation: turn-page-prev 620ms cubic-bezier(0.58, 0.05, 0.22, 0.99) both;
+  }
+
+  .page-turner.active {
+    position: fixed;
+    z-index: 11;
+    top: 50%;
+    left: 18px;
+    right: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .page-turn-button {
+    width: 46px;
+    height: 64px;
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    border-radius: 999px;
+    background: rgba(255, 250, 242, 0.82);
+    color: var(--accent);
+    box-shadow: 0 12px 32px rgba(70, 49, 32, 0.14);
+    backdrop-filter: blur(16px);
+    font-family: Georgia, serif;
+    font-size: 38px;
+    line-height: 1;
+    pointer-events: auto;
+  }
+
+  .page-turn-button:disabled {
+    opacity: 0.2;
+  }
+
+  .page-number {
+    position: fixed;
+    left: 50%;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    border-radius: 999px;
+    padding: 6px 11px;
+    background: rgba(255, 250, 242, 0.72);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 750;
+    pointer-events: none;
   }
 
   .text.short-spread {
@@ -1178,6 +1262,18 @@ button:disabled {
     left: clamp(30px, 4vw, 58px);
     right: clamp(30px, 4vw, 58px);
   }
+}
+
+@keyframes turn-page-next {
+  0% { transform: rotateY(0deg); filter: brightness(1); }
+  45% { filter: brightness(0.9); }
+  100% { transform: rotateY(-178deg); filter: brightness(0.76); }
+}
+
+@keyframes turn-page-prev {
+  0% { transform: rotateY(0deg); filter: brightness(1); }
+  45% { filter: brightness(0.9); }
+  100% { transform: rotateY(178deg); filter: brightness(0.76); }
 }
 
 /* iPad Air 11-inch landscape (1180 × 820 CSS viewport). */
