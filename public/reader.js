@@ -93,7 +93,7 @@ function showToast(message) {
 function formatIdentity(author) {
   const value = String(author || "unknown").toLowerCase();
   if (value === "user" || value === "koshi") return "you";
-  if (value === "claude") return "Claude";
+  if (value === "claude") return "共读伙伴";
   return value;
 }
 
@@ -261,10 +261,10 @@ function renderAnnotations() {
     .join("");
 
   $("submit-notes").disabled = openCount === 0;
-  $("submit-notes").textContent = openCount ? `Send ${openCount} to Claude` : "Send to Claude";
+  $("submit-notes").textContent = openCount ? `发送 ${openCount} 条给共读伙伴` : "发送给共读伙伴";
   $("status").textContent = openCount
-    ? `${openCount} private note${openCount === 1 ? "" : "s"} waiting.`
-    : "Private notes stay local until you send them.";
+    ? `${openCount} 条私人笔记正在等待发送。`
+    : "你的笔记会先安静地留在这里。";
 }
 
 function currentBook() {
@@ -748,6 +748,17 @@ $("continue-reading").addEventListener("click", async () => {
 });
 
 $("refresh").addEventListener("click", () => refreshCurrent({ force: true }).catch(showError));
+
+$("back-to-library").addEventListener("click", () => {
+  document.body.classList.remove("has-book", "has-chunk");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+$("back-to-chapters").addEventListener("click", () => {
+  document.body.classList.remove("has-chunk");
+  document.body.classList.add("has-book");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
 
 $("show-card").addEventListener("click", openCardPanel);
 

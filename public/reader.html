@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Co-Reading</title>
+    <title>共读书房</title>
     <link rel="stylesheet" href="/reader.css" />
   </head>
   <body>
@@ -11,12 +11,13 @@
       <section class="sidebar" aria-label="Library">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Co-Reading</p>
-            <h1>Library</h1>
+            <p class="eyebrow">Co-Reading · OUR LITTLE LIBRARY</p>
+            <h1>共读书房</h1>
+            <p class="welcome-note">把喜欢的句子，留在同一页里。</p>
           </div>
           <div class="topbar-actions">
-            <button id="import-book" class="icon-button" title="Import EPUB or TXT">＋</button>
-            <button id="refresh" class="icon-button" title="Refresh library">↻</button>
+            <button id="import-book" class="icon-button" title="导入 EPUB、TXT 或 Markdown">＋</button>
+            <button id="refresh" class="icon-button" title="刷新书架">↻</button>
           </div>
           <input id="import-file" type="file" accept=".epub,.txt,.text,.md,.markdown" multiple hidden />
         </header>
@@ -25,8 +26,11 @@
 
       <section class="chapters" aria-label="Chapters">
         <header class="panel-head">
-          <p id="book-meta" class="eyebrow">Choose a book</p>
-          <h2 id="book-title">Reading shelf</h2>
+          <button id="back-to-library" class="mobile-back" type="button">← 书架</button>
+          <div>
+            <p id="book-meta" class="eyebrow">选择一本书</p>
+            <h2 id="book-title">章节目录</h2>
+          </div>
         </header>
         <div id="chunks" class="chunk-list"></div>
       </section>
@@ -34,36 +38,37 @@
       <section class="reader" aria-label="Reader">
         <header class="reader-head">
           <div>
-            <p id="chunk-file" class="eyebrow">No chapter selected</p>
-            <h2 id="chunk-title">Open a chapter to start reading</h2>
+            <button id="back-to-chapters" class="mobile-back" type="button">← 目录</button>
+            <p id="chunk-file" class="eyebrow">尚未选择章节</p>
+            <h2 id="chunk-title">翻开一章，开始共读</h2>
           </div>
           <div class="reader-actions">
-            <button id="show-card" class="secondary-button" disabled>Cards</button>
-            <button id="continue-reading" class="secondary-button" disabled>Continue</button>
-            <button id="mark-read" class="secondary-button" disabled>Mark read</button>
+            <button id="show-card" class="secondary-button" disabled>书签</button>
+            <button id="continue-reading" class="secondary-button" disabled>继续阅读</button>
+            <button id="mark-read" class="secondary-button" disabled>读完本章</button>
           </div>
         </header>
 
         <article id="text" class="text">
-          <p class="empty">Select a book and chapter. Highlight text to leave a note for Claude.</p>
+          <p class="empty">先选择一本书和章节。长按选中文字，就能留下只属于你们的页边话。</p>
         </article>
 
         <aside id="margins" class="margins" aria-label="Margin notes"></aside>
 
         <form id="note-form" class="note-form" hidden>
           <div class="quote-preview" id="quote-preview"></div>
-          <textarea id="note" rows="3" placeholder="Leave a note for Claude..."></textarea>
+          <textarea id="note" rows="3" placeholder="写下此刻想到的话……"></textarea>
           <div class="form-actions">
-            <button type="button" id="cancel-note" class="secondary-button">Cancel</button>
-            <button type="submit" class="primary-button">Save note</button>
+            <button type="button" id="cancel-note" class="secondary-button">取消</button>
+            <button type="submit" class="primary-button">收进页边</button>
           </div>
         </form>
 
         <footer class="submitbar">
-          <span id="status">Private notes stay local until you send them.</span>
+          <span id="status">你的笔记会先安静地留在这里。</span>
           <div class="submit-actions">
-            <button id="note-selection" class="secondary-button" disabled>Note selection</button>
-            <button id="submit-notes" class="primary-button" disabled>Send to Claude</button>
+            <button id="note-selection" class="secondary-button" disabled>批注选中文字</button>
+            <button id="submit-notes" class="primary-button" disabled>发送给共读伙伴</button>
           </div>
         </footer>
 

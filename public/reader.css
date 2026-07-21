@@ -1,15 +1,15 @@
 :root {
   color-scheme: light dark;
-  --bg: #f7f4ef;
-  --panel: rgba(255, 255, 255, 0.72);
-  --panel-strong: rgba(255, 255, 255, 0.9);
-  --text: #1f1e1b;
-  --muted: #8a8883;
-  --line: rgba(45, 42, 36, 0.1);
-  --accent: #d9795c;
-  --accent-soft: rgba(217, 121, 92, 0.14);
-  --blue-soft: rgba(108, 142, 184, 0.16);
-  --shadow: 0 18px 60px rgba(36, 31, 24, 0.08);
+  --bg: #f6f0e6;
+  --panel: rgba(255, 252, 246, 0.7);
+  --panel-strong: #fffaf2;
+  --text: #443a30;
+  --muted: #998b7b;
+  --line: rgba(111, 87, 62, 0.12);
+  --accent: #b9785d;
+  --accent-soft: rgba(185, 120, 93, 0.14);
+  --blue-soft: rgba(151, 164, 157, 0.16);
+  --shadow: 0 20px 55px rgba(89, 65, 42, 0.1);
   font-family:
     -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
 }
@@ -21,8 +21,19 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 8% 3%, rgba(255, 255, 255, 0.82), transparent 24rem),
+    linear-gradient(135deg, #f9f4eb 0%, var(--bg) 48%, #efe5d7 100%);
   color: var(--text);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+  content: "";
+  pointer-events: none;
 }
 
 button,
@@ -45,6 +56,12 @@ button {
 .reader {
   min-width: 0;
   padding: 28px;
+}
+
+.sidebar,
+.chapters {
+  background: rgba(255, 250, 242, 0.32);
+  backdrop-filter: blur(12px);
 }
 
 .sidebar,
@@ -90,13 +107,34 @@ h2 {
 }
 
 h1 {
-  font-size: 42px;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 38px;
   line-height: 1;
 }
 
 h2 {
-  font-size: 28px;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 27px;
   line-height: 1.12;
+}
+
+.welcome-note {
+  max-width: 13rem;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.mobile-back {
+  display: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .books,
@@ -117,7 +155,7 @@ h2 {
 .note-card {
   width: 100%;
   border: 1px solid transparent;
-  border-radius: 18px;
+  border-radius: 20px;
   background: var(--panel);
   color: inherit;
   text-align: left;
@@ -126,7 +164,7 @@ h2 {
 
 .book,
 .chunk {
-  padding: 16px;
+  padding: 17px;
 }
 
 .book:hover,
@@ -134,8 +172,9 @@ h2 {
 .book.active,
 .chunk.active,
 .book-row.active .book {
-  border-color: var(--accent-soft);
+  border-color: rgba(185, 120, 93, 0.24);
   background: var(--panel-strong);
+  box-shadow: 0 12px 34px rgba(89, 65, 42, 0.07);
 }
 
 .book-delete {
@@ -202,8 +241,8 @@ h2 {
   min-height: 0;
   padding: 10px 2px 96px;
   font-family: Georgia, "Times New Roman", "Songti SC", serif;
-  font-size: 24px;
-  line-height: 1.78;
+  font-size: 22px;
+  line-height: 1.9;
   white-space: pre-wrap;
 }
 
@@ -641,14 +680,14 @@ textarea {
 }
 
 .primary-button {
-  background: var(--accent);
+  background: linear-gradient(135deg, #c68970, #ad6d55);
   color: white;
   font-weight: 800;
 }
 
 .secondary-button,
 .icon-button {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(111, 87, 62, 0.08);
   color: var(--text);
 }
 
@@ -664,8 +703,38 @@ button:disabled {
 }
 
 @media (max-width: 980px) {
+  body {
+    min-height: 100svh;
+  }
+
   .app {
     grid-template-columns: 1fr;
+  }
+
+  .chapters,
+  .reader {
+    display: none;
+  }
+
+  body.has-book .sidebar,
+  body.has-chunk .sidebar,
+  body.has-chunk .chapters {
+    display: none;
+  }
+
+  body.has-book:not(.has-chunk) .chapters {
+    display: block;
+    min-height: 100svh;
+  }
+
+  body.has-chunk .reader {
+    display: grid;
+    min-height: 100svh;
+  }
+
+  .mobile-back {
+    display: inline-flex;
+    margin-bottom: 18px;
   }
 
   .sidebar,
@@ -677,7 +746,7 @@ button:disabled {
   .sidebar,
   .chapters,
   .reader {
-    padding: 22px 18px;
+    padding: max(24px, env(safe-area-inset-top)) 20px calc(120px + env(safe-area-inset-bottom));
   }
 
   .topbar,
@@ -687,21 +756,26 @@ button:disabled {
     margin-bottom: 16px;
   }
 
+  .panel-head,
+  .reader-head {
+    display: block;
+  }
+
+  .topbar {
+    padding-top: 8px;
+  }
+
+  h1 {
+    font-size: 34px;
+  }
+
+  h2 {
+    font-size: 25px;
+  }
+
   .books,
   .chunk-list {
     grid-template-columns: 1fr;
-  }
-
-  body.has-book .books {
-    max-height: 42vh;
-    overflow: auto;
-    padding-right: 2px;
-  }
-
-  body.has-chunk .chunk-list {
-    max-height: 40vh;
-    overflow: auto;
-    padding-right: 2px;
   }
 
   .reader {
@@ -714,13 +788,15 @@ button:disabled {
     position: sticky;
     top: 0;
     z-index: 4;
-    padding: 12px 0;
+    margin: -8px -4px 0;
+    padding: 12px 4px 16px;
     background: color-mix(in srgb, var(--bg) 88%, transparent);
     backdrop-filter: blur(16px);
   }
 
   .reader-actions {
-    flex: 0 0 auto;
+    justify-content: flex-start;
+    margin-top: 14px;
   }
 
   .reader-actions .secondary-button {
@@ -729,9 +805,10 @@ button:disabled {
   }
 
   .text {
-    padding-bottom: 140px;
-    font-size: 22px;
-    line-height: 1.82;
+    overflow: visible;
+    padding: 8px 2px 160px;
+    font-size: 19px;
+    line-height: 1.95;
   }
 
   .note-form,
@@ -766,7 +843,7 @@ button:disabled {
     align-items: stretch;
     flex-direction: column;
     z-index: 9;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding: 12px 14px max(12px, env(safe-area-inset-bottom));
   }
 
   .toast {
@@ -774,7 +851,15 @@ button:disabled {
   }
 
   .submit-actions {
-    justify-content: flex-end;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .submit-actions button {
+    min-width: 0;
+    padding-inline: 12px;
+    font-size: 13px;
   }
 
   .margins {
