@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="/app-icon.png?v=2" />
     <link rel="apple-touch-icon" sizes="180x180" href="/app-icon.png?v=2" />
     <link rel="preload" as="image" href="/loading-cat-rabbit.webp" type="image/webp" />
-    <link rel="stylesheet" href="/reader.css?v=ipad-pages-1" />
+    <link rel="stylesheet" href="/reader.css?v=ipad-pages-3" />
   </head>
   <body>
     <div id="splash" class="splash-screen" role="status" aria-live="polite">
@@ -87,11 +87,17 @@
           </div>
         </form>
 
-        <footer class="submitbar">
+        <button id="tools-toggle" class="tools-toggle" type="button" aria-expanded="false" aria-controls="reading-tools" title="打开批注工具">
+          <span class="tools-glyph">✎</span>
+          <span id="tools-count" class="tools-count" hidden>0</span>
+        </button>
+
+        <footer id="reading-tools" class="submitbar" aria-hidden="true">
           <span id="status">你的笔记会先安静地留在这里。</span>
           <div class="submit-actions">
             <button id="note-selection" class="secondary-button" disabled>批注选中文字</button>
-            <button id="submit-notes" class="primary-button" disabled>发送给共读伙伴</button>
+            <button id="submit-notes" class="primary-button" disabled>发送给 Ember</button>
+            <button id="tools-close" class="tools-close" type="button" aria-label="收起批注工具">×</button>
           </div>
         </footer>
 
@@ -112,6 +118,6 @@
         </aside>
       </section>
     </main>
-    <script type="module" src="/reader.js?v=ipad-pages-1"></script>
+    <script type="module" src="/reader.js?v=ipad-pages-3"></script>
   </body>
 </html>

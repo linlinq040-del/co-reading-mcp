@@ -103,7 +103,7 @@ function showToast(message) {
 function formatIdentity(author) {
   const value = String(author || "unknown").toLowerCase();
   if (value === "user" || value === "koshi") return "you";
-  if (value === "claude") return "共读伙伴";
+  if (value === "claude") return "Ember";
   return value;
 }
 
@@ -267,8 +267,8 @@ function renderText() {
 
 function pageMetrics() {
   const textEl = $("text");
-  const fontSize = 23;
-  const lineHeight = fontSize * 1.95;
+  const fontSize = 20;
+  const lineHeight = fontSize * 1.9;
   return {
     innerWidth: Math.max(300, textEl.clientWidth / 2 - 118),
     maxLines: Math.max(8, Math.floor((textEl.clientHeight - 112) / lineHeight) - 1),
@@ -515,10 +515,19 @@ function renderAnnotations() {
     .join("");
 
   $("submit-notes").disabled = openCount === 0;
-  $("submit-notes").textContent = openCount ? `发送 ${openCount} 条给共读伙伴` : "发送给共读伙伴";
+  $("submit-notes").textContent = openCount ? `发送 ${openCount} 条给 Ember` : "发送给 Ember";
   $("status").textContent = openCount
     ? `${openCount} 条私人笔记正在等待发送。`
     : "你的笔记会先安静地留在这里。";
+  $("tools-count").textContent = String(openCount);
+  $("tools-count").hidden = openCount === 0;
+}
+
+function setReadingTools(open) {
+  $("reading-tools").classList.toggle("is-open", open);
+  $("reading-tools").setAttribute("aria-hidden", String(!open));
+  $("tools-toggle").setAttribute("aria-expanded", String(open));
+  $("tools-toggle").classList.toggle("is-hidden", open);
 }
 
 function currentBook() {
@@ -748,7 +757,7 @@ async function selectBook(bookId) {
   $("book-title").textContent = book?.title || bookId;
   $("chunk-file").textContent = "No chapter selected";
   $("chunk-title").textContent = "Open a chapter to start reading";
-  $("text").innerHTML = `<p class="empty">Choose a chapter. Highlight text to leave a note for Claude.</p>`;
+  $("text").innerHTML = `<p class="empty">选择一个章节。长按选中文字，就能给 Ember 留下批注。</p>`;
   $("mark-read").disabled = true;
   $("continue-reading").disabled = false;
   document.body.classList.add("has-book");
@@ -772,7 +781,7 @@ function clearBookSelection() {
   $("book-title").textContent = "Reading shelf";
   $("chunk-file").textContent = "No chapter selected";
   $("chunk-title").textContent = "Open a chapter to start reading";
-  $("text").innerHTML = `<p class="empty">Select a book and chapter. Highlight text to leave a note for Claude.</p>`;
+  $("text").innerHTML = `<p class="empty">先选择一本书和章节。长按选中文字，就能给 Ember 留下批注。</p>`;
   $("text").classList.remove("short-spread");
   $("mark-read").disabled = true;
   $("continue-reading").disabled = true;
@@ -957,6 +966,7 @@ $("note-form").addEventListener("submit", async (event) => {
 $("note-selection").addEventListener("click", () => {
   const quote = state.selectedQuote || window.getSelection()?.toString() || "";
   openNoteForm(quote);
+  if (quote) setReadingTools(false);
 });
 
 $("margins").addEventListener("click", (event) => {
@@ -1020,8 +1030,9 @@ $("submit-notes").addEventListener("click", async () => {
   });
   await refreshCurrent({ force: true });
   $("status").textContent = result.submissionId
-    ? `Shared ${result.count} note${result.count === 1 ? "" : "s"} with Claude. Submission ${result.submissionId}.`
+    ? `已把 ${result.count} 条笔记发送给 Ember。`
     : result.message || "No private notes to share.";
+  setReadingTools(false);
 });
 
 $("mark-read").addEventListener("click", async () => {
@@ -1049,6 +1060,9 @@ $("continue-reading").addEventListener("click", async () => {
 });
 
 $("refresh").addEventListener("click", () => refreshCurrent({ force: true }).catch(showError));
+
+$("tools-toggle").addEventListener("click", () => setReadingTools(true));
+$("tools-close").addEventListener("click", () => setReadingTools(false));
 
 $("page-prev").addEventListener("click", () => turnSpread(-1));
 $("page-next").addEventListener("click", () => turnSpread(1));
