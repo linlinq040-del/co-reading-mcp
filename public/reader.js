@@ -112,6 +112,13 @@ function formatIdentity(author) {
   return value;
 }
 
+function annotationTone(author) {
+  const value = String(author || "").toLowerCase();
+  if (value === "claude" || value === "ember") return "ember";
+  if (value === "user" || value === "koshi") return "mine";
+  return "neutral";
+}
+
 function cleanBookTitle(value) {
   const raw = String(value || "").trim();
   if (!raw) return "未命名书籍";
@@ -171,7 +178,7 @@ function renderThread(note, notes) {
 
 function renderInlineNote(note, notes) {
   const canDelete = note.author === "user" && ["open", "private", "draft"].includes(note.status || "open");
-  return `<aside class="inline-note" data-note-id="${escapeHtml(note.id)}">
+  return `<aside class="inline-note ${annotationTone(note.author)}-note" data-note-id="${escapeHtml(note.id)}">
     ${canDelete ? `<button class="note-delete" type="button" data-delete-note="${escapeHtml(note.id)}">删除</button>` : ""}
     <p class="inline-note-kicker">${escapeHtml(formatIdentity(note.author))} · ${escapeHtml(note.kind || "note")}</p>
     <p class="note-body">${escapeHtml(note.note)}</p>
@@ -394,7 +401,7 @@ function renderText() {
     html += escapeHtml(text.slice(cursor, highlight.start));
     const quote = escapeHtml(text.slice(highlight.start, highlight.end));
     const bookmark = highlight.shared ? `<span class="shared-bookmark" title="这里有两个人的折痕。">此处有回声</span>` : "";
-    html += `<mark class="${highlight.note.id === state.activeAnnotationId ? "active" : ""} ${highlight.shared ? "shared" : ""}" data-note-id="${escapeHtml(highlight.note.id)}" title="${escapeHtml(highlight.note.note)}">${quote}</mark>${bookmark}${
+    html += `<mark class="${highlight.note.id === state.activeAnnotationId ? "active" : ""} ${highlight.shared ? "shared" : annotationTone(highlight.note.author)}" data-note-id="${escapeHtml(highlight.note.id)}" title="${escapeHtml(highlight.note.note)}">${quote}</mark>${bookmark}${
       highlight.note.id === state.activeAnnotationId && !isBookSpreadLayout() ? renderInlineNote(highlight.note, notes) : ""
     }`;
     cursor = highlight.end;
@@ -483,7 +490,7 @@ function renderPageSlice(text, range, highlights) {
     const markEnd = Math.min(range.end, highlight.end);
     if (markStart > cursor) html += escapeHtml(text.slice(cursor, markStart));
     const quote = escapeHtml(text.slice(markStart, markEnd));
-    html += `<mark class="${highlight.note.id === state.activeAnnotationId ? "active" : ""} ${highlight.shared ? "shared" : ""}" data-note-id="${escapeHtml(highlight.note.id)}" title="${escapeHtml(highlight.note.note)}">${quote}</mark>`;
+    html += `<mark class="${highlight.note.id === state.activeAnnotationId ? "active" : ""} ${highlight.shared ? "shared" : annotationTone(highlight.note.author)}" data-note-id="${escapeHtml(highlight.note.id)}" title="${escapeHtml(highlight.note.note)}">${quote}</mark>`;
     cursor = markEnd;
   }
   if (cursor < range.end) html += escapeHtml(text.slice(cursor, range.end));
@@ -595,6 +602,8 @@ function showSpreadAnnotation(noteId) {
   const notes = state.annotations.filter((item) => item.chunkId === note.chunkId);
   const replies = repliesFor(note.id, notes);
   const popover = spreadPopover();
+  popover.classList.remove("mine-note", "ember-note", "neutral-note");
+  popover.classList.add(`${annotationTone(note.author)}-note`);
   popover.innerHTML = `
     <button type="button" class="spread-note-close" data-close-spread-note aria-label="关闭批注">×</button>
     <p class="inline-note-kicker">${escapeHtml(formatIdentity(note.author))} · ${escapeHtml(note.kind || "note")}</p>
@@ -644,7 +653,7 @@ function renderAnnotations() {
       const expanded = note.id === state.activeAnnotationId;
       const isShared = sharedNoteIdSet(notes).has(note.id);
       const canDelete = note.author === "user" && ["open", "private", "draft"].includes(note.status || "open");
-      return `<article class="note-card ${(note.status || "") === "open" ? "open" : ""} ${expanded ? "active" : ""}" data-note-id="${escapeHtml(note.id)}" tabindex="0">
+      return `<article class="note-card ${annotationTone(note.author)}-note ${(note.status || "") === "open" ? "open" : ""} ${expanded ? "active" : ""}" data-note-id="${escapeHtml(note.id)}" tabindex="0">
         ${canDelete ? `<button class="note-delete" type="button" data-delete-note="${escapeHtml(note.id)}">删除</button>` : ""}
         ${isShared ? `<p class="shared-line">这里有两个人的折痕。</p>` : ""}
         <p class="note-quote">${escapeHtml(note.quote)}</p>

@@ -801,8 +801,16 @@ h2 {
   cursor: pointer;
 }
 
+.text mark.mine {
+  background: rgba(205, 137, 105, 0.2);
+}
+
+.text mark.ember {
+  background: rgba(116, 151, 132, 0.21);
+}
+
 .text mark.shared {
-  background: linear-gradient(90deg, var(--accent-soft), var(--blue-soft));
+  background: linear-gradient(90deg, rgba(205, 137, 105, 0.22), rgba(116, 151, 132, 0.22));
 }
 
 .text mark.active {
@@ -871,6 +879,28 @@ h2 {
   font-size: 16px;
   line-height: 1.55;
   white-space: normal;
+}
+
+.inline-note.mine-note,
+.note-card.mine-note,
+.spread-annotation-popover.mine-note {
+  border-left-color: #c98266;
+}
+
+.inline-note.ember-note,
+.note-card.ember-note,
+.spread-annotation-popover.ember-note {
+  border-left-color: #779789;
+}
+
+.inline-note.ember-note,
+.note-card.ember-note {
+  background: color-mix(in srgb, var(--panel-strong) 88%, rgba(116, 151, 132, 0.18));
+}
+
+.inline-note.mine-note,
+.note-card.mine-note {
+  background: color-mix(in srgb, var(--panel-strong) 90%, rgba(205, 137, 105, 0.15));
 }
 
 .note-delete {
