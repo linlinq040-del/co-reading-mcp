@@ -15,6 +15,7 @@ import {
   listBooks,
   listChunks,
   markRead,
+  readBookCover,
   readCard,
   readChunk,
   replyToAnnotation,
@@ -34,6 +35,10 @@ const contentTypes = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
 };
 
 export function sendJson(res, status, value) {
@@ -83,6 +88,17 @@ export async function handleApi(req, res, url, options = {}) {
 
   if (req.method === "GET" && parts.length === 4 && parts[1] === "books" && parts[3] === "chunks") {
     return sendJson(res, 200, await listChunks(parts[2], { includePrivate: true }));
+  }
+
+  if (req.method === "GET" && parts.length === 4 && parts[1] === "books" && parts[3] === "cover") {
+    const cover = await readBookCover(parts[2]);
+    if (!cover) return sendError(res, 404, "Cover not found");
+    res.writeHead(200, {
+      "content-type": cover.contentType,
+      "cache-control": "private, max-age=3600",
+    });
+    res.end(cover.body);
+    return;
   }
 
   if (req.method === "DELETE" && parts.length === 3 && parts[1] === "books") {

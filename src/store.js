@@ -560,12 +560,34 @@ export async function listBooks({ includePrivate = false } = {}) {
         lastChunkId: summary.lastChunkId,
         lastReadAt: summary.lastReadAt,
         complete: summary.complete,
+        coverUrl: manifest.coverFile ? `/api/books/${encodeURIComponent(manifest.bookId)}/cover` : null,
       });
     } catch {
       // Ignore broken book folders, but keep the server usable.
     }
   }
   return books.sort((a, b) => a.title.localeCompare(b.title));
+}
+
+export async function readBookCover(bookId) {
+  const manifest = await loadManifest(bookId);
+  if (!manifest.coverFile) return null;
+  const bookDir = resolveInside(booksDir, bookId);
+  const coverPath = resolveInside(bookDir, manifest.coverFile);
+  const extension = path.extname(coverPath).toLowerCase();
+  const contentType = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+  }[extension] || "application/octet-stream";
+  try {
+    return { body: await readFile(coverPath), contentType };
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
 }
 
 function rowReferencesBook(row, bookIds) {
