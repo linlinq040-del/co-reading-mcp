@@ -1141,37 +1141,80 @@ button:disabled {
     grid-column: 1;
     height: calc(100svh - 168px);
     min-height: 500px;
-    overflow-x: hidden;
-    overflow-y: hidden;
-    column-width: calc((100vw - clamp(246px, 25vw, 340px)) / 2);
-    column-gap: clamp(54px, 6vw, 78px);
-    column-fill: auto;
-    padding: clamp(42px, 5vh, 58px) clamp(46px, 4.6vw, 64px) 52px;
+    overflow: hidden;
+    columns: auto;
+    padding: 0;
     border: 1px solid rgba(111, 87, 62, 0.1);
     border-radius: 18px 18px 10px 10px;
-    background:
-      linear-gradient(90deg, transparent 49.2%, rgba(94, 70, 48, 0.08) 49.8%, rgba(255, 255, 255, 0.52) 50%, rgba(94, 70, 48, 0.08) 50.2%, transparent 50.8%),
-      rgba(255, 252, 246, 0.84);
+    background: rgba(255, 252, 246, 0.84);
     box-shadow: 0 24px 60px rgba(75, 53, 34, 0.13), inset 0 0 50px rgba(122, 94, 67, 0.035);
-    scroll-behavior: auto;
-    scrollbar-width: none;
-    font-size: clamp(22px, 1.85vw, 25px);
-    line-height: 1.92;
-    font-family: "Songti SC", "STSong", "Noto Serif CJK SC", Georgia, serif;
-    font-weight: 400;
-    letter-spacing: 0;
-    word-spacing: 0;
-    text-align: start;
-    text-justify: auto;
-    word-break: normal;
-    overflow-wrap: break-word;
-    line-break: strict;
-    hanging-punctuation: first last;
     perspective: 1800px;
   }
 
-  .text::-webkit-scrollbar {
-    display: none;
+  .book-spread {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    height: 100%;
+  }
+
+  .book-page {
+    position: relative;
+    min-width: 0;
+    overflow: hidden;
+    padding: clamp(42px, 5vh, 58px) clamp(46px, 4.6vw, 64px) 52px;
+    background: rgba(255, 252, 246, 0.74);
+  }
+
+  .book-page-left {
+    border-radius: 17px 3px 3px 9px;
+    box-shadow: inset -22px 0 30px -28px rgba(66, 45, 29, 0.38);
+  }
+
+  .book-page-right {
+    border-left: 1px solid rgba(94, 70, 48, 0.11);
+    border-radius: 3px 17px 9px 3px;
+    box-shadow: inset 22px 0 30px -28px rgba(66, 45, 29, 0.38);
+  }
+
+  .book-page-content {
+    height: 100%;
+    overflow: hidden;
+    color: var(--text);
+    font-family: "Songti SC", "STSong", "Noto Serif CJK SC", Georgia, serif;
+    font-size: clamp(22px, 1.85vw, 25px);
+    font-weight: 400;
+    line-height: 1.92;
+    letter-spacing: 0;
+    word-spacing: 0;
+    text-align: start;
+    word-break: normal;
+    overflow-wrap: break-word;
+    line-break: strict;
+    white-space: pre-wrap;
+  }
+
+  .leaf-number {
+    position: absolute;
+    bottom: 18px;
+    color: var(--muted);
+    font-family: Georgia, serif;
+    font-size: 11px;
+  }
+
+  .book-page-left .leaf-number {
+    left: 28px;
+  }
+
+  .book-page-right .leaf-number {
+    right: 28px;
+  }
+
+  .page-empty {
+    margin: 42% 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
   }
 
   .text.turning-next::after,
@@ -1249,12 +1292,6 @@ button:disabled {
     pointer-events: none;
   }
 
-  .text.short-spread {
-    column-count: 2;
-    column-width: auto;
-    column-fill: balance;
-  }
-
   .margins {
     display: none;
   }
@@ -1296,14 +1333,15 @@ button:disabled {
 
   .text {
     height: calc(100svh - 170px);
-    column-width: 416px;
-    column-gap: 72px;
+  }
+
+  .book-page {
     padding: 48px 54px 54px;
+  }
+
+  .book-page-content {
     font-size: 23px;
     line-height: 1.95;
-    letter-spacing: 0;
-    word-spacing: 0;
-    text-align: start;
   }
 
   .note-form,

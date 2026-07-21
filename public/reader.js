@@ -23,6 +23,7 @@ const state = {
   spreadPages: 1,
   spreadTouchX: null,
   pageTurning: false,
+  spreadRanges: [],
 };
 
 const $ = (id) => document.getElementById(id);
@@ -208,7 +209,6 @@ function renderChunks() {
 function renderText() {
   if (!state.chunk) return;
   const text = state.chunk.text || "";
-  $("text").classList.toggle("short-spread", isBookSpreadLayout() && text.trim().length < 900);
   const notes = state.annotations.filter((item) => item.chunkId === state.chunkId);
   const sharedIds = sharedNoteIdSet(notes);
   const highlights = [];
@@ -234,6 +234,15 @@ function renderText() {
     highlights.push({ start, end, note, shared: sharedIds.has(note.id) });
   }
 
+  if (isBookSpreadLayout()) {
+    renderMeasuredSpread(text, highlights);
+    bindMarkActions();
+    updatePageTurner();
+    if (state.activeAnnotationId) showSpreadAnnotation(state.activeAnnotationId);
+    else hideSpreadAnnotation();
+    return;
+  }
+
   let html = "";
   let cursor = 0;
   for (const highlight of highlights) {
@@ -254,6 +263,105 @@ function renderText() {
   } else {
     hideSpreadAnnotation();
   }
+}
+
+function pageMetrics() {
+  const textEl = $("text");
+  const fontSize = 23;
+  const lineHeight = fontSize * 1.95;
+  return {
+    innerWidth: Math.max(300, textEl.clientWidth / 2 - 118),
+    maxLines: Math.max(8, Math.floor((textEl.clientHeight - 112) / lineHeight) - 1),
+    fontSize,
+  };
+}
+
+function measuredPageRanges(text) {
+  if (!text) return [{ start: 0, end: 0 }];
+  const { innerWidth, maxLines, fontSize } = pageMetrics();
+  const canvas = measuredPageRanges.canvas || (measuredPageRanges.canvas = document.createElement("canvas"));
+  const context = canvas.getContext("2d");
+  context.font = `${fontSize}px "Songti SC", "STSong", serif`;
+  const ranges = [];
+  let start = 0;
+
+  while (start < text.length) {
+    let index = start;
+    let lines = 1;
+    let line = "";
+    let lastComfortableBreak = -1;
+
+    while (index < text.length) {
+      const character = text[index];
+      if (character === "\r") {
+        index += 1;
+        continue;
+      }
+      if (character === "\n") {
+        lines += 1;
+        line = "";
+        lastComfortableBreak = index + 1;
+        index += 1;
+        if (lines > maxLines) break;
+        continue;
+      }
+
+      const nextLine = line + character;
+      if (context.measureText(nextLine).width > innerWidth && line) {
+        lines += 1;
+        line = character;
+        if (lines > maxLines) break;
+      } else {
+        line = nextLine;
+      }
+      if (/[。！？；：.!?;:]|\s/.test(character)) lastComfortableBreak = index + 1;
+      index += 1;
+    }
+
+    let end = Math.max(start + 1, index);
+    if (index < text.length && lastComfortableBreak > start + 24 && end - lastComfortableBreak < 24) {
+      end = lastComfortableBreak;
+    }
+    ranges.push({ start, end });
+    start = end;
+  }
+  return ranges;
+}
+
+function renderPageSlice(text, range, highlights) {
+  if (!range || range.start >= range.end) return `<p class="page-empty">本章至此，轻轻翻页继续。</p>`;
+  const relevant = highlights.filter((item) => item.start < range.end && item.end > range.start);
+  let html = "";
+  let cursor = range.start;
+  for (const highlight of relevant) {
+    const markStart = Math.max(range.start, highlight.start);
+    const markEnd = Math.min(range.end, highlight.end);
+    if (markStart > cursor) html += escapeHtml(text.slice(cursor, markStart));
+    const quote = escapeHtml(text.slice(markStart, markEnd));
+    html += `<mark class="${highlight.note.id === state.activeAnnotationId ? "active" : ""} ${highlight.shared ? "shared" : ""}" data-note-id="${escapeHtml(highlight.note.id)}" title="${escapeHtml(highlight.note.note)}">${quote}</mark>`;
+    cursor = markEnd;
+  }
+  if (cursor < range.end) html += escapeHtml(text.slice(cursor, range.end));
+  return html;
+}
+
+function renderMeasuredSpread(text, highlights) {
+  state.spreadRanges = measuredPageRanges(text);
+  state.spreadPages = Math.max(1, Math.ceil(state.spreadRanges.length / 2));
+  state.spreadPage = Math.min(state.spreadPage, state.spreadPages - 1);
+  const leftIndex = state.spreadPage * 2;
+  const left = state.spreadRanges[leftIndex] || { start: text.length, end: text.length };
+  const right = state.spreadRanges[leftIndex + 1] || { start: text.length, end: text.length };
+  $("text").innerHTML = `<div class="book-spread">
+    <section class="book-page book-page-left" data-page-start="${left.start}">
+      <div class="book-page-content">${renderPageSlice(text, left, highlights)}</div>
+      <span class="leaf-number">${leftIndex + 1}</span>
+    </section>
+    <section class="book-page book-page-right" data-page-start="${right.start}">
+      <div class="book-page-content">${renderPageSlice(text, right, highlights)}</div>
+      <span class="leaf-number">${leftIndex + 2}</span>
+    </section>
+  </div>`;
 }
 
 function spreadPopover() {
@@ -279,15 +387,6 @@ function hideSpreadAnnotation() {
   if (popover) popover.hidden = true;
 }
 
-function spreadStepSize(text = $("text")) {
-  const style = getComputedStyle(text);
-  const columnWidth = Number.parseFloat(style.columnWidth);
-  const columnGap = Number.parseFloat(style.columnGap);
-  return Number.isFinite(columnWidth) && Number.isFinite(columnGap)
-    ? Math.max(1, 2 * (columnWidth + columnGap))
-    : Math.max(text.clientWidth, 1);
-}
-
 function updatePageTurner({ reset = false } = {}) {
   const text = $("text");
   const turner = $("page-turner");
@@ -296,11 +395,10 @@ function updatePageTurner({ reset = false } = {}) {
   turner.classList.toggle("active", active);
   if (!active) return;
 
-  const step = spreadStepSize(text);
-  state.spreadPages = Math.max(1, Math.ceil(Math.max(0, text.scrollWidth - text.clientWidth - 2) / step) + 1);
+  state.spreadPages = Math.max(1, Math.ceil(state.spreadRanges.length / 2));
   if (reset) {
     state.spreadPage = 0;
-    text.scrollLeft = 0;
+    renderText();
   } else {
     state.spreadPage = Math.min(state.spreadPage, state.spreadPages - 1);
   }
@@ -320,9 +418,8 @@ function turnSpread(direction) {
   text.classList.add(direction > 0 ? "turning-next" : "turning-prev");
   setTimeout(async () => {
     if (target !== state.spreadPage) {
-      text.scrollLeft = target * spreadStepSize(text);
       state.spreadPage = target;
-      updatePageTurner();
+      renderText();
       return;
     }
     try {
@@ -331,8 +428,7 @@ function turnSpread(direction) {
         updatePageTurner({ reset: true });
         if (direction < 0) {
           state.spreadPage = Math.max(0, state.spreadPages - 1);
-          $("text").scrollLeft = state.spreadPage * spreadStepSize($("text"));
-          updatePageTurner();
+          renderText();
         }
       });
     } catch (error) {
@@ -615,11 +711,19 @@ function selectionDetails(selection) {
   if (!textEl.contains(range.commonAncestorContainer) || !textEl.contains(startEl) || !textEl.contains(endEl)) return null;
   if (startEl.closest(".inline-note, .shared-bookmark") || endEl.closest(".inline-note, .shared-bookmark")) return null;
 
+  const page = startEl.closest(".book-page");
+  const pageContent = startEl.closest(".book-page-content") || textEl;
   const prefixRange = range.cloneRange();
-  prefixRange.selectNodeContents(textEl);
+  prefixRange.selectNodeContents(pageContent);
   prefixRange.setEnd(range.startContainer, range.startOffset);
+  const pageStart = Number(page?.dataset.pageStart || 0);
+  const leadingTrim = Math.max(0, rawQuote.indexOf(quote));
+  const directOffset = pageStart + prefixRange.toString().length + leadingTrim;
   const occurrence = countOccurrences(prefixRange.toString(), quote);
-  const quoteOffset = findOccurrence(state.chunk.text, quote, occurrence);
+  const fallbackOffset = findOccurrence(state.chunk.text, quote, occurrence);
+  const quoteOffset = state.chunk.text.slice(directOffset, directOffset + quote.length) === quote
+    ? directOffset
+    : fallbackOffset;
   return {
     quote,
     quoteOffset: quoteOffset >= 0 ? quoteOffset : null,
@@ -692,6 +796,7 @@ async function deleteBookFromShelf(bookId) {
 
 async function selectChunk(chunkId) {
   state.chunkId = chunkId;
+  state.spreadPage = 0;
   state.activeAnnotationId = null;
   state.chunk = await api(`/api/books/${encodeURIComponent(state.bookId)}/chunks/${encodeURIComponent(chunkId)}`);
   state.lastFinish = null;
