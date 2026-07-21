@@ -71,7 +71,11 @@ function fileToBase64(file) {
 }
 
 function isMobileLayout() {
-  return window.matchMedia("(max-width: 980px)").matches;
+  return window.matchMedia("(max-width: 1366px)").matches;
+}
+
+function isBookSpreadLayout() {
+  return window.matchMedia("(min-width: 981px) and (max-width: 1366px) and (orientation: landscape)").matches;
 }
 
 function scrollToPanel(selector) {
@@ -231,13 +235,76 @@ function renderText() {
     const quote = escapeHtml(text.slice(highlight.start, highlight.end));
     const bookmark = highlight.shared ? `<span class="shared-bookmark" title="这里有两个人的折痕。">此处有回声</span>` : "";
     html += `<mark class="${highlight.note.id === state.activeAnnotationId ? "active" : ""} ${highlight.shared ? "shared" : ""}" data-note-id="${escapeHtml(highlight.note.id)}" title="${escapeHtml(highlight.note.note)}">${quote}</mark>${bookmark}${
-      highlight.note.id === state.activeAnnotationId ? renderInlineNote(highlight.note, notes) : ""
+      highlight.note.id === state.activeAnnotationId && !isBookSpreadLayout() ? renderInlineNote(highlight.note, notes) : ""
     }`;
     cursor = highlight.end;
   }
   html += escapeHtml(text.slice(cursor));
   $("text").innerHTML = html;
   bindMarkActions();
+  if (isBookSpreadLayout() && state.activeAnnotationId) {
+    showSpreadAnnotation(state.activeAnnotationId);
+  } else {
+    hideSpreadAnnotation();
+  }
+}
+
+function spreadPopover() {
+  let popover = document.querySelector(".spread-annotation-popover");
+  if (popover) return popover;
+  popover = document.createElement("aside");
+  popover.className = "spread-annotation-popover";
+  popover.hidden = true;
+  document.body.append(popover);
+  popover.addEventListener("click", (event) => {
+    if (event.target.closest("[data-close-spread-note]")) {
+      state.activeAnnotationId = null;
+      hideSpreadAnnotation();
+      renderText();
+      renderAnnotations();
+    }
+  });
+  return popover;
+}
+
+function hideSpreadAnnotation() {
+  const popover = document.querySelector(".spread-annotation-popover");
+  if (popover) popover.hidden = true;
+}
+
+function showSpreadAnnotation(noteId) {
+  if (!isBookSpreadLayout()) return;
+  const note = state.annotations.find((item) => item.id === noteId);
+  const mark = document.querySelector(`mark[data-note-id="${CSS.escape(noteId)}"]`);
+  if (!note || !mark) return;
+
+  const notes = state.annotations.filter((item) => item.chunkId === note.chunkId);
+  const replies = repliesFor(note.id, notes);
+  const popover = spreadPopover();
+  popover.innerHTML = `
+    <button type="button" class="spread-note-close" data-close-spread-note aria-label="关闭批注">×</button>
+    <p class="inline-note-kicker">${escapeHtml(formatIdentity(note.author))} · ${escapeHtml(note.kind || "note")}</p>
+    <p class="spread-note-quote">${escapeHtml(note.quote || "")}</p>
+    <p class="note-body">${escapeHtml(note.note || "")}</p>
+    ${replies.length ? `<div class="spread-note-replies">${replies.map((reply) => renderReply(reply, note, notes, 1, new Set([note.id]))).join("")}</div>` : ""}
+  `;
+  popover.hidden = false;
+
+  requestAnimationFrame(() => {
+    const markRect = mark.getBoundingClientRect();
+    const cardRect = popover.getBoundingClientRect();
+    const margin = 18;
+    const left = Math.min(
+      window.innerWidth - cardRect.width - margin,
+      Math.max(margin, markRect.left + markRect.width / 2 - cardRect.width / 2),
+    );
+    const below = markRect.bottom + 12;
+    const top = below + cardRect.height <= window.innerHeight - margin
+      ? below
+      : Math.max(margin, markRect.top - cardRect.height - 12);
+    popover.style.left = `${left}px`;
+    popover.style.top = `${top}px`;
+  });
 }
 
 function bindMarkActions() {
@@ -580,6 +647,7 @@ function activateAnnotation(noteId, { scroll = false } = {}) {
   state.activeAnnotationId = noteId;
   renderText();
   renderAnnotations();
+  if (isBookSpreadLayout()) showSpreadAnnotation(noteId);
   if (scroll) {
     document.querySelector(`.inline-note[data-note-id="${CSS.escape(noteId)}"], .note-card[data-note-id="${CSS.escape(noteId)}"]`)?.scrollIntoView({
       block: "nearest",

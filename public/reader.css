@@ -826,6 +826,248 @@ button:disabled {
   font-size: 20px;
 }
 
+/* Tablet: use a calm two-pane flow instead of squeezing three desktop columns. */
+@media (min-width: 981px) and (max-width: 1366px) {
+  body {
+    min-height: 100svh;
+  }
+
+  .app {
+    grid-template-columns: 280px minmax(0, 1fr);
+    min-height: 100svh;
+  }
+
+  .sidebar,
+  .chapters,
+  .reader {
+    min-height: 100svh;
+    padding: max(28px, env(safe-area-inset-top)) 24px max(96px, env(safe-area-inset-bottom));
+  }
+
+  .chapters,
+  .reader {
+    display: none;
+  }
+
+  .sidebar {
+    grid-column: 1 / -1;
+    border-right: 0;
+  }
+
+  .sidebar .topbar {
+    max-width: 1120px;
+    margin-inline: auto;
+  }
+
+  .sidebar .books {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-width: 1120px;
+    margin-inline: auto;
+    gap: 34px 26px;
+  }
+
+  body.has-book:not(.has-chunk) .sidebar {
+    display: block;
+    grid-column: 1;
+    border-right: 1px solid var(--line);
+  }
+
+  body.has-book:not(.has-chunk) .sidebar .books {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 14px;
+  }
+
+  body.has-book:not(.has-chunk) .chapters {
+    display: block;
+    grid-column: 2;
+  }
+
+  body.has-chunk .sidebar {
+    display: none;
+  }
+
+  body.has-chunk .chapters {
+    display: block;
+    grid-column: 1;
+    border-right: 1px solid var(--line);
+  }
+
+  body.has-chunk .reader {
+    display: grid;
+    grid-column: 2;
+  }
+
+  .mobile-back {
+    display: inline-flex;
+    margin-bottom: 16px;
+  }
+
+  .panel-head,
+  .reader-head {
+    align-items: flex-start;
+  }
+
+  .reader {
+    grid-template-columns: minmax(0, 760px);
+    grid-template-rows: auto auto auto;
+    align-content: start;
+    justify-content: center;
+    overflow: auto;
+    gap: 22px;
+  }
+
+  .reader-head {
+    grid-column: 1;
+    position: sticky;
+    top: -28px;
+    z-index: 4;
+    padding: 14px 0;
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    backdrop-filter: blur(18px);
+  }
+
+  .text,
+  .margins {
+    overflow: visible;
+  }
+
+  .text {
+    padding-bottom: 150px;
+    font-size: 21px;
+  }
+
+  .book-delete {
+    opacity: 0.78;
+  }
+
+  .note-form,
+  .submitbar {
+    left: 304px;
+    right: 24px;
+  }
+
+  .card-panel {
+    top: 24px;
+    right: 24px;
+    max-height: calc(100svh - 48px);
+  }
+}
+
+/* Landscape tablets open the chapter as a two-page book spread. */
+@media (min-width: 981px) and (max-width: 1366px) and (orientation: landscape) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  body.has-chunk .chapters {
+    display: none;
+  }
+
+  body.has-chunk .reader {
+    grid-column: 1;
+  }
+
+  .reader {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    padding-inline: clamp(36px, 6vw, 90px);
+    overflow: hidden;
+  }
+
+  .reader-head {
+    grid-column: 1;
+    top: -28px;
+  }
+
+  .text {
+    grid-column: 1;
+    height: calc(100svh - 190px);
+    min-height: 480px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    column-width: calc((100vw - clamp(260px, 28vw, 380px)) / 2);
+    column-gap: clamp(58px, 7vw, 96px);
+    column-fill: auto;
+    padding: 38px clamp(42px, 5vw, 72px) 48px;
+    border: 1px solid rgba(111, 87, 62, 0.1);
+    border-radius: 18px 18px 10px 10px;
+    background:
+      linear-gradient(90deg, transparent 49.2%, rgba(94, 70, 48, 0.08) 49.8%, rgba(255, 255, 255, 0.52) 50%, rgba(94, 70, 48, 0.08) 50.2%, transparent 50.8%),
+      rgba(255, 252, 246, 0.84);
+    box-shadow: 0 24px 60px rgba(75, 53, 34, 0.13), inset 0 0 50px rgba(122, 94, 67, 0.035);
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-soft) transparent;
+  }
+
+  .margins {
+    display: none;
+  }
+
+  .text,
+  .text p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .note-form,
+  .submitbar {
+    left: clamp(36px, 6vw, 90px);
+    right: clamp(36px, 6vw, 90px);
+  }
+}
+
+.spread-annotation-popover {
+  position: fixed;
+  z-index: 30;
+  width: min(360px, calc(100vw - 36px));
+  max-height: min(440px, calc(100svh - 36px));
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-left: 4px solid var(--accent);
+  border-radius: 20px;
+  padding: 20px 22px;
+  background: rgba(255, 250, 242, 0.96);
+  color: var(--text);
+  box-shadow: 0 24px 70px rgba(61, 43, 30, 0.22);
+  backdrop-filter: blur(22px);
+}
+
+.spread-annotation-popover[hidden] {
+  display: none;
+}
+
+.spread-note-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 20px;
+}
+
+.spread-note-quote {
+  margin: 12px 26px 14px 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--accent-soft);
+  color: var(--muted);
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.spread-note-replies {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
 @media (max-width: 980px) {
   body {
     min-height: 100svh;
