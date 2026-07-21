@@ -1287,6 +1287,44 @@ export async function annotatePassage(input) {
   });
 }
 
+export async function deleteOpenUserAnnotation(annotationId) {
+  return withWriteLock(async () => {
+    if (!annotationId) throw new Error("annotationId is required");
+
+    const annotations = await readAllAnnotations();
+    const target = annotations.find((annotation) => annotation.id === annotationId);
+    if (!target) throw new Error(`Unknown annotationId: ${annotationId}`);
+
+    const status = target.status || "published";
+    if (!isHumanAuthor(target.author) || !["open", "private", "draft"].includes(status)) {
+      throw new Error("Only unshared personal notes can be deleted");
+    }
+
+    const removedIds = new Set([annotationId]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const annotation of annotations) {
+        if (annotation.parentId && removedIds.has(annotation.parentId) && !removedIds.has(annotation.id)) {
+          removedIds.add(annotation.id);
+          changed = true;
+        }
+      }
+    }
+
+    await writeJsonl(
+      annotationsPath,
+      annotations.filter((annotation) => !removedIds.has(annotation.id)),
+    );
+    invalidateAnnotationCache();
+    return {
+      id: annotationId,
+      deleted: removedIds.size,
+      message: removedIds.size === 1 ? "Deleted the private note." : `Deleted the private note and ${removedIds.size - 1} replies.`,
+    };
+  });
+}
+
 export async function submitUserNotes({
   bookId,
   chunkId,

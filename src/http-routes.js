@@ -6,6 +6,7 @@ import {
   collectCard,
   continueReading,
   deleteBook,
+  deleteOpenUserAnnotation,
   dismissCard,
   getProgress,
   listCardInbox,
@@ -127,6 +128,10 @@ export async function handleApi(req, res, url, options = {}) {
         includePrivate: true,
       }),
     );
+  }
+
+  if (req.method === "DELETE" && parts.length === 3 && parts[1] === "annotations") {
+    return sendJson(res, 200, await deleteOpenUserAnnotation(parts[2]));
   }
 
   if (req.method === "GET" && parts.length === 2 && parts[1] === "cards") {
