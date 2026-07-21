@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import json
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -20,6 +21,7 @@ from import_text import slugify, write_book_sections
 
 
 CONTAINER = "META-INF/container.xml"
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
 
 def ns_name(name: str) -> str:
@@ -145,6 +147,57 @@ def parse_opf(
     return title, author, ordered, toc_titles
 
 
+def find_cover_image(zf: zipfile.ZipFile, opf_path: str | None) -> tuple[str, bytes] | None:
+    """Return the best EPUB cover image path and bytes, if one exists."""
+    candidates: list[tuple[int, str]] = []
+    if opf_path:
+        try:
+            root = ET.fromstring(zf.read(opf_path))
+            opf_dir = str(Path(opf_path).parent)
+            if opf_dir == ".":
+                opf_dir = ""
+            cover_id = None
+            for element in root.iter():
+                if ns_name(element.tag) == "meta" and element.attrib.get("name", "").lower() == "cover":
+                    cover_id = element.attrib.get("content")
+            for element in root.iter():
+                if ns_name(element.tag) != "item":
+                    continue
+                item_id = element.attrib.get("id", "")
+                href = element.attrib.get("href", "")
+                media_type = element.attrib.get("media-type", "")
+                properties = element.attrib.get("properties", "")
+                if not href or not (media_type.startswith("image/") or Path(href).suffix.lower() in IMAGE_EXTENSIONS):
+                    continue
+                resolved = str(Path(opf_dir) / href) if opf_dir else href
+                score = 0
+                if "cover-image" in properties.split():
+                    score += 100
+                if cover_id and item_id == cover_id:
+                    score += 90
+                if "cover" in item_id.lower():
+                    score += 50
+                if "cover" in Path(href).stem.lower():
+                    score += 40
+                candidates.append((score, resolved))
+        except Exception:
+            pass
+
+    if not candidates:
+        for name in zf.namelist():
+            if Path(name).suffix.lower() in IMAGE_EXTENSIONS and "cover" in Path(name).stem.lower():
+                candidates.append((10, name))
+
+    for _, name in sorted(candidates, key=lambda item: item[0], reverse=True):
+        try:
+            data = zf.read(name)
+            if len(data) >= 128:
+                return name, data
+        except KeyError:
+            continue
+    return None
+
+
 def parse_toc_titles(zf: zipfile.ZipFile, toc_path: str, opf_dir: str) -> dict[str, str]:
     try:
         raw = zf.read(toc_path)
@@ -207,7 +260,7 @@ def html_files(zf: zipfile.ZipFile) -> list[str]:
     )
 
 
-def read_epub(path: Path) -> tuple[str | None, str | None, list[dict[str, str]]]:
+def read_epub(path: Path) -> tuple[str | None, str | None, list[dict[str, str]], tuple[str, bytes] | None]:
     with zipfile.ZipFile(path) as zf:
         opf_path = find_opf_path(zf)
         title = None
@@ -222,6 +275,7 @@ def read_epub(path: Path) -> tuple[str | None, str | None, list[dict[str, str]]]
         if not ordered:
             ordered = html_files(zf)
 
+        cover = find_cover_image(zf, opf_path)
         sections = []
         for index, name in enumerate(ordered):
             try:
@@ -245,7 +299,7 @@ def read_epub(path: Path) -> tuple[str | None, str | None, list[dict[str, str]]]
                 section_title = toc_titles.get(name) or title_from_html(raw) or f"Section {index + 1}"
                 sections.append({"title": section_title, "text": text, "sourcePath": name})
 
-    return title, author, sections
+    return title, author, sections, cover
 
 
 def main() -> None:
@@ -258,7 +312,7 @@ def main() -> None:
     parser.add_argument("--max-chars", type=int, default=6000)
     args = parser.parse_args()
 
-    title, author, sections = read_epub(args.input)
+    title, author, sections, cover = read_epub(args.input)
     final_title = args.title or clean_metadata_title(title, args.input.stem)
     final_author = args.author or clean_metadata_author(author, final_title)
     if not final_author and args.title and title and title != final_title:
@@ -280,6 +334,17 @@ def main() -> None:
         args.max_chars,
         {"type": "epub", "fileName": args.input.name},
     )
+    if cover:
+        cover_path, cover_bytes = cover
+        extension = Path(cover_path).suffix.lower()
+        if extension not in IMAGE_EXTENSIONS:
+            extension = ".jpg"
+        cover_name = f"cover{extension}"
+        (book_dir / cover_name).write_bytes(cover_bytes)
+        manifest_path = book_dir / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["coverFile"] = cover_name
+        manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(book_dir)
 
 
