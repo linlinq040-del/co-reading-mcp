@@ -156,6 +156,7 @@ h2 {
 .book,
 .chunk,
 .note-card {
+  position: relative;
   width: 100%;
   border: 1px solid transparent;
   border-radius: 20px;
@@ -407,6 +408,7 @@ h2 {
 }
 
 .inline-note {
+  position: relative;
   display: block;
   margin: 14px 0 18px;
   padding: 14px 16px;
@@ -419,6 +421,27 @@ h2 {
   font-size: 16px;
   line-height: 1.55;
   white-space: normal;
+}
+
+.note-delete {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 2;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 11px;
+  color: #9b5d49;
+  background: rgba(155, 93, 73, 0.09);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.note-delete:active {
+  transform: scale(0.96);
+  background: rgba(155, 93, 73, 0.16);
 }
 
 .inline-note-kicker {

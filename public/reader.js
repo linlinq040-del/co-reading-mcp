@@ -144,7 +144,9 @@ function renderThread(note, notes) {
 }
 
 function renderInlineNote(note, notes) {
+  const canDelete = note.author === "user" && ["open", "private", "draft"].includes(note.status || "open");
   return `<aside class="inline-note" data-note-id="${escapeHtml(note.id)}">
+    ${canDelete ? `<button class="note-delete" type="button" data-delete-note="${escapeHtml(note.id)}">删除</button>` : ""}
     <p class="inline-note-kicker">${escapeHtml(formatIdentity(note.author))} · ${escapeHtml(note.kind || "note")}</p>
     <p class="note-body">${escapeHtml(note.note)}</p>
     ${renderThread(note, notes)}
@@ -260,7 +262,9 @@ function renderAnnotations() {
       const replies = replyCount(note.id, notes);
       const expanded = note.id === state.activeAnnotationId;
       const isShared = sharedNoteIdSet(notes).has(note.id);
+      const canDelete = note.author === "user" && ["open", "private", "draft"].includes(note.status || "open");
       return `<article class="note-card ${(note.status || "") === "open" ? "open" : ""} ${expanded ? "active" : ""}" data-note-id="${escapeHtml(note.id)}" tabindex="0">
+        ${canDelete ? `<button class="note-delete" type="button" data-delete-note="${escapeHtml(note.id)}">删除</button>` : ""}
         ${isShared ? `<p class="shared-line">这里有两个人的折痕。</p>` : ""}
         <p class="note-quote">${escapeHtml(note.quote)}</p>
         <p class="note-body">${escapeHtml(note.note)}</p>
@@ -584,6 +588,16 @@ function activateAnnotation(noteId, { scroll = false } = {}) {
   }
 }
 
+async function deletePrivateNote(noteId) {
+  const note = state.annotations.find((item) => item.id === noteId);
+  if (!note) return;
+  if (!confirm(`删除这条尚未发送的批注？\n\n${note.note || ""}`)) return;
+  await api(`/api/annotations/${encodeURIComponent(noteId)}`, { method: "DELETE" });
+  if (state.activeAnnotationId === noteId) state.activeAnnotationId = null;
+  await refreshCurrent({ force: true });
+  showToast("这条私人批注已删除");
+}
+
 function isEditingDraft() {
   const active = document.activeElement;
   return Boolean(
@@ -642,6 +656,12 @@ $("text").addEventListener("touchend", () => {
 });
 
 $("text").addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("[data-delete-note]");
+  if (deleteButton) {
+    event.stopPropagation();
+    deletePrivateNote(deleteButton.dataset.deleteNote).catch(showError);
+    return;
+  }
   const mark = event.target.closest("mark[data-note-id]");
   if (mark) activateAnnotation(mark.dataset.noteId, { scroll: true });
 });
@@ -679,6 +699,12 @@ $("note-selection").addEventListener("click", () => {
 });
 
 $("margins").addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("[data-delete-note]");
+  if (deleteButton) {
+    event.stopPropagation();
+    deletePrivateNote(deleteButton.dataset.deleteNote).catch(showError);
+    return;
+  }
   if (event.target.closest("textarea, button")) return;
   const card = event.target.closest(".note-card[data-note-id]");
   if (card) activateAnnotation(card.dataset.noteId);
