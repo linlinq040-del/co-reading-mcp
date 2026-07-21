@@ -267,11 +267,11 @@ function renderText() {
 
 function pageMetrics() {
   const textEl = $("text");
-  const fontSize = 20;
-  const lineHeight = fontSize * 1.9;
+  const fontSize = 18;
+  const lineHeight = fontSize * 1.86;
   return {
     innerWidth: Math.max(300, textEl.clientWidth / 2 - 118),
-    maxLines: Math.max(8, Math.floor((textEl.clientHeight - 112) / lineHeight) - 1),
+    maxLines: Math.max(8, Math.floor((textEl.clientHeight - 82) / lineHeight) - 1),
     fontSize,
   };
 }

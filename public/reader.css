@@ -1240,7 +1240,7 @@ button:disabled {
     position: relative;
     min-width: 0;
     overflow: hidden;
-    padding: clamp(42px, 5vh, 58px) clamp(46px, 4.6vw, 64px) 52px;
+    padding: clamp(28px, 3.5vh, 38px) clamp(46px, 4.6vw, 64px) 44px;
     background: rgba(255, 252, 246, 0.74);
   }
 
@@ -1260,9 +1260,9 @@ button:disabled {
     overflow: hidden;
     color: var(--text);
     font-family: "Songti SC", "STSong", "Noto Serif CJK SC", Georgia, serif;
-    font-size: clamp(20px, 1.6vw, 22px);
+    font-size: clamp(18px, 1.45vw, 20px);
     font-weight: 400;
-    line-height: 1.9;
+    line-height: 1.86;
     letter-spacing: 0;
     word-spacing: 0;
     text-align: start;
@@ -1419,12 +1419,12 @@ button:disabled {
   }
 
   .book-page {
-    padding: 48px 54px 54px;
+    padding: 28px 54px 44px;
   }
 
   .book-page-content {
-    font-size: 20px;
-    line-height: 1.9;
+    font-size: 18px;
+    line-height: 1.86;
   }
 
   .note-form,
