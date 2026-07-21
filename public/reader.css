@@ -1157,8 +1157,16 @@ button:disabled {
     scrollbar-width: none;
     font-size: clamp(22px, 1.85vw, 25px);
     line-height: 1.92;
-    text-align: justify;
-    text-justify: inter-ideograph;
+    font-family: "Songti SC", "STSong", "Noto Serif CJK SC", Georgia, serif;
+    font-weight: 400;
+    letter-spacing: 0;
+    word-spacing: 0;
+    text-align: start;
+    text-justify: auto;
+    word-break: normal;
+    overflow-wrap: break-word;
+    line-break: strict;
+    hanging-punctuation: first last;
     perspective: 1800px;
   }
 
@@ -1293,6 +1301,9 @@ button:disabled {
     padding: 48px 54px 54px;
     font-size: 23px;
     line-height: 1.95;
+    letter-spacing: 0;
+    word-spacing: 0;
+    text-align: start;
   }
 
   .note-form,
