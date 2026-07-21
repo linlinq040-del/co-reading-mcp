@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="/app-icon.png?v=2" />
     <link rel="apple-touch-icon" sizes="180x180" href="/app-icon.png?v=2" />
     <link rel="preload" as="image" href="/loading-cat-rabbit.webp" type="image/webp" />
-    <link rel="stylesheet" href="/reader.css?v=ipad-pages-9" />
+    <link rel="stylesheet" href="/reader.css?v=ipad-pages-10" />
   </head>
   <body>
     <div id="splash" class="splash-screen" role="status" aria-live="polite">
@@ -49,12 +49,22 @@
         <div id="books" class="books" aria-live="polite"></div>
         <section id="library-notes" class="library-notes" hidden>
           <header class="library-notes-head">
-            <div>
-              <p class="eyebrow">MARGINS TOGETHER</p>
-              <h2>批注书房</h2>
-              <p class="welcome-note">每一本书，都有属于你们的页边回声。</p>
+            <div class="library-notes-title-row">
+              <div>
+                <p class="eyebrow">MARGINS TOGETHER</p>
+                <h2>批注书房</h2>
+              </div>
+              <button id="close-library-notes" class="icon-button" type="button" aria-label="返回书架">×</button>
             </div>
-            <button id="close-library-notes" class="icon-button" type="button" aria-label="返回书架">×</button>
+            <div class="library-note-controls">
+              <label class="library-note-search">
+                <span>⌕</span>
+                <input id="library-note-search" type="search" placeholder="搜索原文或批注……" autocomplete="off" />
+              </label>
+              <select id="library-note-book-filter" class="library-note-book-filter" aria-label="按书筛选">
+                <option value="">全部书籍</option>
+              </select>
+            </div>
           </header>
           <div id="library-notes-list" class="library-notes-list"></div>
         </section>
@@ -137,6 +147,6 @@
         </aside>
       </section>
     </main>
-    <script type="module" src="/reader.js?v=ipad-pages-9"></script>
+    <script type="module" src="/reader.js?v=ipad-pages-10"></script>
   </body>
 </html>

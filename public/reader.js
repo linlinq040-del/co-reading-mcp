@@ -27,6 +27,8 @@ const state = {
   libraryAnnotations: [],
   booksRenderSignature: "",
   libraryNotesRenderSignature: "",
+  libraryNoteQuery: "",
+  libraryNoteBook: "",
 };
 
 const $ = (id) => document.getElementById(id);
@@ -273,9 +275,12 @@ function renderLibraryNotes() {
   const list = $("library-notes-list");
   if (!list) return;
   const notes = [...state.libraryAnnotations].sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
+  const query = state.libraryNoteQuery.trim().toLocaleLowerCase();
   const signature = JSON.stringify({
     books: state.books.map((book) => [book.bookId, book.title, book.author]),
     notes: notes.map((note) => [note.id, note.status, note.note, note.quote, note.parentId]),
+    query,
+    selectedBook: state.libraryNoteBook,
   });
   if (signature === state.libraryNotesRenderSignature) return;
   const openBooks = new Set(
@@ -283,8 +288,17 @@ function renderLibraryNotes() {
   );
   state.libraryNotesRenderSignature = signature;
   const groups = state.books
-    .map((book) => ({ book, notes: notes.filter((note) => note.bookId === book.bookId) }))
-    .filter((group) => group.notes.length);
+    .filter((book) => !state.libraryNoteBook || book.bookId === state.libraryNoteBook)
+    .map((book) => ({
+      book,
+      notes: notes.filter((note) => note.bookId === book.bookId),
+    }))
+    .filter((group) => group.notes.length)
+    .filter((group) => {
+      if (!query) return true;
+      return group.notes.some((note) => [group.book.title, group.book.author, note.quote, note.note, formatIdentity(note.author), note.chunkId]
+        .some((value) => String(value || "").toLocaleLowerCase().includes(query)));
+    });
   if (!groups.length) {
     list.innerHTML = `<p class="library-notes-empty">书房里还没有批注。读到喜欢的句子时，把它留在这里吧。</p>`;
     return;
@@ -300,7 +314,8 @@ function renderLibraryNotes() {
         <span class="library-note-chevron">⌄</span>
       </summary>
       <div class="library-book-annotations">
-        ${passageGroups(bookNotes).map((passage) => `<article class="library-annotation-card passage-conversation">
+        ${passageGroups(bookNotes).filter((passage) => !query || passage.notes.some((note) => [passage.quote, note.note, formatIdentity(note.author), note.chunkId]
+          .some((value) => String(value || "").toLocaleLowerCase().includes(query)))).map((passage) => `<article class="library-annotation-card passage-conversation">
           <span class="annotation-index-meta">${escapeHtml(passage.chunkId || "未知章节")} · ${passage.notes.length} 条页边话</span>
           ${passage.quote ? `<blockquote class="annotation-index-quote passage-quote">${escapeHtml(passage.quote)}</blockquote>` : ""}
           <div class="passage-voices">
@@ -327,6 +342,12 @@ async function setLibraryNotes(open) {
   document.querySelector(".sidebar .topbar").hidden = open;
   if (!open) return;
   state.libraryAnnotations = await api("/api/annotations");
+  const booksWithNotes = new Set(state.libraryAnnotations.map((note) => note.bookId));
+  $("library-note-book-filter").innerHTML = `<option value="">全部书籍</option>${state.books
+    .filter((book) => booksWithNotes.has(book.bookId))
+    .map((book) => `<option value="${escapeHtml(book.bookId)}">${escapeHtml(cleanBookTitle(book.title || book.bookId))}</option>`)
+    .join("")}`;
+  $("library-note-book-filter").value = state.libraryNoteBook;
   renderLibraryNotes();
 }
 
@@ -1031,6 +1052,15 @@ $("chunks").addEventListener("click", (event) => {
 
 $("open-library-notes").addEventListener("click", () => setLibraryNotes(true).catch(showError));
 $("close-library-notes").addEventListener("click", () => setLibraryNotes(false).catch(showError));
+$("library-note-search").addEventListener("input", (event) => {
+  state.libraryNoteQuery = event.target.value;
+  renderLibraryNotes();
+});
+$("library-note-book-filter").addEventListener("change", (event) => {
+  state.libraryNoteBook = event.target.value;
+  renderLibraryNotes();
+  $("library-notes-list").scrollIntoView({ block: "start", behavior: "smooth" });
+});
 $("library-notes-list").addEventListener("click", async (event) => {
   const button = event.target.closest("[data-jump-book]");
   if (!button) return;
