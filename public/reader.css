@@ -711,11 +711,11 @@ h2 {
   box-shadow: none;
 }
 
-.book-delete {
+.book-delete,
+.book-rename {
   position: absolute;
   z-index: 4;
   top: 6px;
-  right: 6px;
   border: 1px solid transparent;
   border-radius: 999px;
   width: 28px;
@@ -730,12 +730,24 @@ h2 {
   transition: opacity 160ms ease;
 }
 
+.book-delete {
+  right: 6px;
+}
+
+.book-rename {
+  right: 40px;
+  font-size: 15px;
+}
+
 .book-row:hover .book-delete,
-.book-row:focus-within .book-delete {
+.book-row:hover .book-rename,
+.book-row:focus-within .book-delete,
+.book-row:focus-within .book-rename {
   opacity: 1;
 }
 
-.book-delete:hover {
+.book-delete:hover,
+.book-rename:hover {
   border-color: var(--accent-soft);
   color: var(--accent);
   background: var(--accent-soft);
@@ -1496,7 +1508,8 @@ button:disabled {
     font-size: 21px;
   }
 
-  .book-delete {
+  .book-delete,
+  .book-rename {
     opacity: 0.78;
   }
 
@@ -1897,7 +1910,8 @@ button:disabled {
     gap: 28px 18px;
   }
 
-  .book-delete {
+  .book-delete,
+  .book-rename {
     opacity: 0.82;
   }
 

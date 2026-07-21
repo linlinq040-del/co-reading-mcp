@@ -222,6 +222,7 @@ function renderBooks() {
             <span class="progress"><span style="width: ${pct}%"></span></span>
           </span>
         </button>
+        <button class="book-rename" data-rename-book="${escapeHtml(book.bookId)}" title="重命名这本书" aria-label="重命名 ${escapeHtml(cleanBookTitle(book.title || book.bookId))}">✎</button>
         <button class="book-delete" data-delete-book="${escapeHtml(book.bookId)}" title="删除这本书">×</button>
       </div>`;
     })
@@ -958,6 +959,28 @@ async function deleteBookFromShelf(bookId) {
   renderBooks();
 }
 
+async function renameBookOnShelf(bookId) {
+  const book = state.books.find((item) => item.bookId === bookId);
+  if (!book) return;
+  const currentTitle = cleanBookTitle(book.title || bookId);
+  const entered = prompt("给这本书取一个新名字：", currentTitle);
+  if (entered === null) return;
+  const title = entered.replace(/\s+/g, " ").trim();
+  if (!title || title === book.title) return;
+
+  const updated = await api(`/api/books/${encodeURIComponent(bookId)}`, {
+    method: "PATCH",
+    body: { title },
+  });
+  book.title = updated.title;
+  state.booksRenderSignature = "";
+  state.libraryNotesRenderSignature = "";
+  renderBooks();
+  renderLibraryNotes();
+  if (state.bookId === bookId) $("book-title").textContent = updated.title;
+  $("status").textContent = `书名已改为《${updated.title}》。`;
+}
+
 async function selectChunk(chunkId) {
   state.chunkId = chunkId;
   state.spreadPage = 0;
@@ -1045,6 +1068,11 @@ async function refreshCurrent({ force = false } = {}) {
 }
 
 $("books").addEventListener("click", (event) => {
+  const renameButton = event.target.closest("[data-rename-book]");
+  if (renameButton) {
+    renameBookOnShelf(renameButton.dataset.renameBook).catch(showError);
+    return;
+  }
   const deleteButton = event.target.closest("[data-delete-book]");
   if (deleteButton) {
     deleteBookFromShelf(deleteButton.dataset.deleteBook).catch(showError);
