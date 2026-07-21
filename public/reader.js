@@ -22,6 +22,7 @@ const state = {
 };
 
 const $ = (id) => document.getElementById(id);
+const splashStartedAt = performance.now();
 const authTokenKey = "co-reading-auth-token";
 const urlToken = new URLSearchParams(location.search).get("token");
 if (urlToken) {
@@ -919,7 +920,18 @@ function showError(error) {
   $("status").textContent = error.message || String(error);
 }
 
-loadBooks().catch(showError);
+function dismissSplash() {
+  const splash = $("splash");
+  if (!splash || splash.classList.contains("leaving")) return;
+  const wait = Math.max(0, 900 - (performance.now() - splashStartedAt));
+  setTimeout(() => {
+    splash.classList.add("leaving");
+    splash.addEventListener("transitionend", () => splash.remove(), { once: true });
+  }, wait);
+}
+
+loadBooks().catch(showError).finally(dismissSplash);
+setTimeout(dismissSplash, 8000);
 setInterval(() => {
   if (document.hidden) return;
   refreshCurrent().catch(showError);

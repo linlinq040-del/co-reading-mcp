@@ -5,11 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f6f0e6" />
     <title>共读书房</title>
-    <link rel="icon" type="image/png" href="/app-icon.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/app-icon.png" />
+    <link rel="icon" type="image/png" href="/app-icon.png?v=2" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/app-icon.png?v=2" />
+    <link rel="preload" as="image" href="/loading-cat-rabbit.webp" type="image/webp" />
     <link rel="stylesheet" href="/reader.css" />
   </head>
   <body>
+    <div id="splash" class="splash-screen" role="status" aria-live="polite">
+      <div class="splash-paper">
+        <div class="splash-art-wrap">
+          <img class="splash-art" src="/loading-cat-rabbit.webp" alt="小兔和小猫一起读书" />
+          <span class="splash-star star-one">✦</span>
+          <span class="splash-star star-two">·</span>
+        </div>
+        <p class="splash-kicker">OUR LITTLE LIBRARY</p>
+        <h1 class="splash-title">共读书房</h1>
+        <p class="splash-copy">正在替你们翻到上次读过的那一页</p>
+        <div class="page-loader" aria-hidden="true"><i></i><i></i><i></i></div>
+      </div>
+    </div>
     <main class="app">
       <section class="sidebar" aria-label="Library">
         <header class="topbar">
