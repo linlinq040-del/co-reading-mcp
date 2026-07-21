@@ -157,16 +157,30 @@ function renderBooks() {
       const total = book.chunkCount || 0;
       const read = book.chunksRead || 0;
       const pct = total ? Math.round((read / total) * 100) : 0;
+      const hue = Array.from(book.bookId || "book").reduce((sum, char) => sum + char.charCodeAt(0), 0) % 42;
       return `<div class="book-row ${book.bookId === state.bookId ? "active" : ""}">
         <button class="book" data-book="${escapeHtml(book.bookId)}">
-          <span class="book-title">${escapeHtml(book.title || book.bookId)}</span>
-          <span class="book-meta">${escapeHtml(book.author || "Unknown author")} · ${read}/${total} · ${book.annotationCount || 0} notes</span>
-          <span class="progress"><span style="width: ${pct}%"></span></span>
+          <span class="book-cover" style="--cover-hue:${hue}">
+            <span class="book-cover-fallback">
+              <span class="cover-title">${escapeHtml(book.title || book.bookId)}</span>
+              <span class="cover-author">${escapeHtml(book.author || "共读书房")}</span>
+            </span>
+            ${book.coverUrl ? `<img src="${escapeHtml(book.coverUrl)}" alt="${escapeHtml(book.title || book.bookId)}封面" loading="lazy" />` : ""}
+          </span>
+          <span class="book-info">
+            <span class="book-title">${escapeHtml(book.title || book.bookId)}</span>
+            <span class="book-meta">${escapeHtml(book.author || "未知作者")}</span>
+            <span class="book-progress-label">${pct ? `${pct}% 已读` : "尚未开始"}</span>
+            <span class="progress"><span style="width: ${pct}%"></span></span>
+          </span>
         </button>
-        <button class="book-delete" data-delete-book="${escapeHtml(book.bookId)}" title="Delete this book">Delete</button>
+        <button class="book-delete" data-delete-book="${escapeHtml(book.bookId)}" title="删除这本书">×</button>
       </div>`;
     })
     .join("");
+  document.querySelectorAll(".book-cover img").forEach((image) => {
+    image.addEventListener("error", () => image.remove(), { once: true });
+  });
 }
 
 function renderChunks() {
