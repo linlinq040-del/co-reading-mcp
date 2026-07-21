@@ -29,6 +29,9 @@ const state = {
   libraryNotesRenderSignature: "",
   libraryNoteQuery: "",
   libraryNoteBook: "",
+  autoMarkingChunks: new Set(),
+  chunkOpenedAt: 0,
+  chapterHadReadingMotion: false,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -564,7 +567,10 @@ function turnSpread(direction) {
   if (!isBookSpreadLayout() || state.pageTurning) return;
   const target = Math.max(0, Math.min(state.spreadPages - 1, state.spreadPage + direction));
   const boundaryChunkId = direction > 0 ? state.chunk?.nextId : state.chunk?.prevId;
-  if (target === state.spreadPage && !boundaryChunkId) return;
+  if (target === state.spreadPage && !boundaryChunkId) {
+    if (direction > 0) markChunkRead(state.bookId, state.chunkId, { automatic: true }).catch(showError);
+    return;
+  }
 
   const text = $("text");
   state.pageTurning = true;
@@ -576,6 +582,9 @@ function turnSpread(direction) {
       return;
     }
     try {
+      if (direction > 0) {
+        await markChunkRead(state.bookId, state.chunkId, { automatic: true });
+      }
       await selectChunk(boundaryChunkId);
       requestAnimationFrame(() => {
         updatePageTurner({ reset: true });
@@ -986,10 +995,12 @@ async function selectChunk(chunkId) {
   state.spreadPage = 0;
   state.activeAnnotationId = null;
   state.chunk = await api(`/api/books/${encodeURIComponent(state.bookId)}/chunks/${encodeURIComponent(chunkId)}`);
+  state.chunkOpenedAt = Date.now();
+  state.chapterHadReadingMotion = false;
   state.lastFinish = null;
   $("chunk-file").textContent = state.chunk.chunk.id;
   $("chunk-title").textContent = state.chunk.chunk.title;
-  $("mark-read").disabled = false;
+  $("mark-read").disabled = Boolean(state.chunks.find((item) => item.id === chunkId)?.read);
   $("continue-reading").disabled = false;
   document.body.classList.add("has-chunk");
   renderChunks();
@@ -998,6 +1009,47 @@ async function selectChunk(chunkId) {
   refreshCards();
   requestAnimationFrame(() => updatePageTurner({ reset: true }));
   scrollToPanel(".reader");
+}
+
+async function markChunkRead(bookId, chunkId, { automatic = false } = {}) {
+  if (!bookId || !chunkId) return null;
+  const key = `${bookId}:${chunkId}`;
+  const chunkMeta = state.bookId === bookId ? state.chunks.find((item) => item.id === chunkId) : null;
+  if (chunkMeta?.read || state.autoMarkingChunks.has(key)) return null;
+
+  state.autoMarkingChunks.add(key);
+  try {
+    const result = await api("/api/mark-read", {
+      method: "POST",
+      body: { bookId, chunkId },
+    });
+    if (chunkMeta) chunkMeta.read = true;
+    if (state.bookId === bookId) {
+      state.chunks = await api(`/api/books/${encodeURIComponent(bookId)}/chunks`);
+      renderChunks();
+    }
+    await loadBooks();
+    state.lastFinish = result.finish || null;
+    if (state.bookId === bookId && state.chunkId === chunkId) {
+      $("mark-read").disabled = true;
+      if (automatic) $("status").textContent = "已读到本章末尾，自动标记为 read。";
+      refreshCards({ finish: state.lastFinish, show: Boolean(state.lastFinish) });
+    }
+    return result;
+  } finally {
+    state.autoMarkingChunks.delete(key);
+  }
+}
+
+function maybeAutoMarkScrolledChapter() {
+  if (!state.chunk || isBookSpreadLayout() || !state.chapterHadReadingMotion) return;
+  if (Date.now() - state.chunkOpenedAt < 1200) return;
+  const chunkMeta = state.chunks.find((item) => item.id === state.chunkId);
+  if (chunkMeta?.read) return;
+  const rect = $("text").getBoundingClientRect();
+  if (rect.bottom <= window.innerHeight + 72 && rect.top < window.innerHeight * 0.35) {
+    markChunkRead(state.bookId, state.chunkId, { automatic: true }).catch(showError);
+  }
 }
 
 function openNoteForm(quote) {
@@ -1239,13 +1291,8 @@ $("submit-notes").addEventListener("click", async () => {
 });
 
 $("mark-read").addEventListener("click", async () => {
-  const result = await api("/api/mark-read", {
-    method: "POST",
-    body: { bookId: state.bookId, chunkId: state.chunkId },
-  });
-  state.lastFinish = result.finish || null;
-  await refreshCurrent({ force: true });
-  refreshCards({ finish: state.lastFinish, show: Boolean(state.lastFinish) });
+  const result = await markChunkRead(state.bookId, state.chunkId);
+  if (!result) return;
   if (!state.lastFinish && state.cardCandidates.some((card) => card.source === "shared")) {
     showToast("收获了一枚回声书签");
   }
@@ -1269,6 +1316,15 @@ $("tools-close").addEventListener("click", () => setReadingTools(false));
 
 $("page-prev").addEventListener("click", () => turnSpread(-1));
 $("page-next").addEventListener("click", () => turnSpread(1));
+
+const readingScrollTarget = document.querySelector(".reader") || window;
+const noteReadingMotion = () => {
+  if (!state.chunk || isBookSpreadLayout()) return;
+  state.chapterHadReadingMotion = true;
+  maybeAutoMarkScrolledChapter();
+};
+window.addEventListener("scroll", noteReadingMotion, { passive: true });
+if (readingScrollTarget !== window) readingScrollTarget.addEventListener("scroll", noteReadingMotion, { passive: true });
 
 window.addEventListener("resize", () => {
   requestAnimationFrame(() => updatePageTurner({ reset: true }));
