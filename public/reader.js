@@ -26,6 +26,7 @@ const state = {
   spreadRanges: [],
   libraryAnnotations: [],
   booksRenderSignature: "",
+  libraryNotesRenderSignature: "",
 };
 
 const $ = (id) => document.getElementById(id);
@@ -272,6 +273,15 @@ function renderLibraryNotes() {
   const list = $("library-notes-list");
   if (!list) return;
   const notes = [...state.libraryAnnotations].sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
+  const signature = JSON.stringify({
+    books: state.books.map((book) => [book.bookId, book.title, book.author]),
+    notes: notes.map((note) => [note.id, note.status, note.note, note.quote, note.parentId]),
+  });
+  if (signature === state.libraryNotesRenderSignature) return;
+  const openBooks = new Set(
+    [...list.querySelectorAll("details[open][data-note-book]")].map((details) => details.dataset.noteBook),
+  );
+  state.libraryNotesRenderSignature = signature;
   const groups = state.books
     .map((book) => ({ book, notes: notes.filter((note) => note.bookId === book.bookId) }))
     .filter((group) => group.notes.length);
@@ -280,7 +290,7 @@ function renderLibraryNotes() {
     return;
   }
   list.innerHTML = groups
-    .map(({ book, notes: bookNotes }) => `<details class="library-note-book">
+    .map(({ book, notes: bookNotes }) => `<details class="library-note-book" data-note-book="${escapeHtml(book.bookId)}" ${openBooks.has(book.bookId) ? "open" : ""}>
       <summary>
         <span class="library-note-mark">${escapeHtml(cleanBookTitle(book.title || book.bookId).slice(0, 1))}</span>
         <span class="library-note-identity">
