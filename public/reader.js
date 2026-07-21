@@ -24,6 +24,7 @@ const state = {
   spreadTouchX: null,
   pageTurning: false,
   spreadRanges: [],
+  libraryAnnotations: [],
 };
 
 const $ = (id) => document.getElementById(id);
@@ -102,9 +103,20 @@ function showToast(message) {
 
 function formatIdentity(author) {
   const value = String(author || "unknown").toLowerCase();
-  if (value === "user" || value === "koshi") return "you";
+  if (value === "user" || value === "koshi") return "我";
   if (value === "claude") return "Ember";
   return value;
+}
+
+function cleanBookTitle(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "未命名书籍";
+  const candidates = raw
+    .split(/_{2,}|\s+[—–|]\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => !/(z-?lib|1lib|\.epub|\.txt|\.md|https?:|www\.)/i.test(part));
+  return (candidates[0] || raw).replace(/[_-]+$/g, "").trim();
 }
 
 function replyClass(reply, root) {
@@ -174,13 +186,13 @@ function renderBooks() {
         <button class="book" data-book="${escapeHtml(book.bookId)}">
           <span class="book-cover" style="--cover-hue:${hue}">
             <span class="book-cover-fallback">
-              <span class="cover-title">${escapeHtml(book.title || book.bookId)}</span>
+              <span class="cover-title">${escapeHtml(cleanBookTitle(book.title || book.bookId))}</span>
               <span class="cover-author">${escapeHtml(book.author || "共读书房")}</span>
             </span>
-            ${book.coverUrl ? `<img src="${escapeHtml(book.coverUrl)}" alt="${escapeHtml(book.title || book.bookId)}封面" loading="lazy" />` : ""}
+            ${book.coverUrl ? `<img src="${escapeHtml(book.coverUrl)}" alt="${escapeHtml(cleanBookTitle(book.title || book.bookId))}封面" loading="lazy" />` : ""}
           </span>
           <span class="book-info">
-            <span class="book-title">${escapeHtml(book.title || book.bookId)}</span>
+            <span class="book-title">${escapeHtml(cleanBookTitle(book.title || book.bookId))}</span>
             <span class="book-meta">${escapeHtml(book.author || "未知作者")}</span>
             <span class="book-progress-label">${pct ? `${pct}% 已读` : "尚未开始"}</span>
             <span class="progress"><span style="width: ${pct}%"></span></span>
@@ -204,6 +216,66 @@ function renderChunks() {
       </button>`,
     )
     .join("");
+}
+
+function rootAnnotationId(note, notes) {
+  let current = note;
+  const seen = new Set();
+  while (current?.parentId && !seen.has(current.id)) {
+    seen.add(current.id);
+    current = notes.find((item) => item.id === current.parentId) || current;
+    if (!current.parentId) break;
+  }
+  return current?.id || note.id;
+}
+
+function renderLibraryNotes() {
+  const list = $("library-notes-list");
+  if (!list) return;
+  const notes = [...state.libraryAnnotations].sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
+  const groups = state.books
+    .map((book) => ({ book, notes: notes.filter((note) => note.bookId === book.bookId) }))
+    .filter((group) => group.notes.length);
+  if (!groups.length) {
+    list.innerHTML = `<p class="library-notes-empty">书房里还没有批注。读到喜欢的句子时，把它留在这里吧。</p>`;
+    return;
+  }
+  list.innerHTML = groups
+    .map(({ book, notes: bookNotes }) => `<details class="library-note-book">
+      <summary>
+        <span class="library-note-mark">${escapeHtml(cleanBookTitle(book.title || book.bookId).slice(0, 1))}</span>
+        <span class="library-note-identity">
+          <strong>${escapeHtml(cleanBookTitle(book.title || book.bookId))}</strong>
+          <small>${escapeHtml(book.author || "未知作者")} · ${bookNotes.length} 条</small>
+        </span>
+        <span class="library-note-chevron">⌄</span>
+      </summary>
+      <div class="library-book-annotations">
+        ${bookNotes.map((note) => {
+          const rootId = rootAnnotationId(note, bookNotes);
+          return `<article class="library-annotation-card">
+            <span class="annotation-index-meta">${escapeHtml(formatIdentity(note.author))} · ${escapeHtml(note.chunkId || "未知章节")}</span>
+            ${note.quote ? `<blockquote class="annotation-index-quote">${escapeHtml(note.quote)}</blockquote>` : ""}
+            <p class="annotation-index-note">${escapeHtml(note.note || "")}</p>
+            <footer class="library-annotation-footer">
+              <span class="annotation-index-kind">${escapeHtml(note.kind || "note")}${(note.status || "") === "open" ? " · 尚未发送" : ""}</span>
+              <button type="button" class="jump-to-source" data-jump-book="${escapeHtml(book.bookId)}" data-jump-chunk="${escapeHtml(note.chunkId)}" data-jump-note="${escapeHtml(rootId)}">回到原文</button>
+            </footer>
+          </article>`;
+        }).join("")}
+      </div>
+    </details>`)
+    .join("");
+}
+
+async function setLibraryNotes(open) {
+  $("library-notes").hidden = !open;
+  $("books").hidden = open;
+  $("open-library-notes").hidden = open;
+  document.querySelector(".sidebar .topbar").hidden = open;
+  if (!open) return;
+  state.libraryAnnotations = await api("/api/annotations");
+  renderLibraryNotes();
 }
 
 function renderText() {
@@ -521,6 +593,7 @@ function renderAnnotations() {
     : "你的笔记会先安静地留在这里。";
   $("tools-count").textContent = String(openCount);
   $("tools-count").hidden = openCount === 0;
+  if (!$("library-notes")?.hidden) renderLibraryNotes();
 }
 
 function setReadingTools(open) {
@@ -753,8 +826,8 @@ async function selectBook(bookId) {
   state.chunks = await api(`/api/books/${encodeURIComponent(bookId)}/chunks`);
   state.annotations = await api(`/api/annotations?bookId=${encodeURIComponent(bookId)}`);
   const book = state.books.find((item) => item.bookId === bookId);
-  $("book-meta").textContent = book?.author || "Unknown author";
-  $("book-title").textContent = book?.title || bookId;
+  $("book-meta").textContent = book?.author || "未知作者";
+  $("book-title").textContent = cleanBookTitle(book?.title || bookId);
   $("chunk-file").textContent = "No chapter selected";
   $("chunk-title").textContent = "Open a chapter to start reading";
   $("text").innerHTML = `<p class="empty">选择一个章节。长按选中文字，就能给 Ember 留下批注。</p>`;
@@ -902,6 +975,17 @@ $("books").addEventListener("click", (event) => {
 $("chunks").addEventListener("click", (event) => {
   const button = event.target.closest("[data-chunk]");
   if (button) selectChunk(button.dataset.chunk).catch(showError);
+});
+
+$("open-library-notes").addEventListener("click", () => setLibraryNotes(true).catch(showError));
+$("close-library-notes").addEventListener("click", () => setLibraryNotes(false).catch(showError));
+$("library-notes-list").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-jump-book]");
+  if (!button) return;
+  await setLibraryNotes(false);
+  await selectBook(button.dataset.jumpBook);
+  await selectChunk(button.dataset.jumpChunk);
+  activateAnnotation(button.dataset.jumpNote, { scroll: true });
 });
 
 $("text").addEventListener("mouseup", () => {

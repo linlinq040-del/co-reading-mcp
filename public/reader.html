@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="/app-icon.png?v=2" />
     <link rel="apple-touch-icon" sizes="180x180" href="/app-icon.png?v=2" />
     <link rel="preload" as="image" href="/loading-cat-rabbit.webp" type="image/webp" />
-    <link rel="stylesheet" href="/reader.css?v=ipad-pages-4" />
+    <link rel="stylesheet" href="/reader.css?v=ipad-pages-6" />
   </head>
   <body>
     <div id="splash" class="splash-screen" role="status" aria-live="polite">
@@ -38,7 +38,26 @@
           </div>
           <input id="import-file" type="file" accept=".epub,.txt,.text,.md,.markdown" multiple hidden />
         </header>
+        <button id="open-library-notes" class="annotation-home-entry" type="button">
+          <span class="annotation-home-icon">✦</span>
+          <span>
+            <strong>批注书房</strong>
+            <small>按书整理你和 Ember 留下的页边话</small>
+          </span>
+          <span class="annotation-home-arrow">›</span>
+        </button>
         <div id="books" class="books" aria-live="polite"></div>
+        <section id="library-notes" class="library-notes" hidden>
+          <header class="library-notes-head">
+            <div>
+              <p class="eyebrow">MARGINS TOGETHER</p>
+              <h2>批注书房</h2>
+              <p class="welcome-note">每一本书，都有属于你们的页边回声。</p>
+            </div>
+            <button id="close-library-notes" class="icon-button" type="button" aria-label="返回书架">×</button>
+          </header>
+          <div id="library-notes-list" class="library-notes-list"></div>
+        </section>
       </section>
 
       <section class="chapters" aria-label="Chapters">
@@ -118,6 +137,6 @@
         </aside>
       </section>
     </main>
-    <script type="module" src="/reader.js?v=ipad-pages-4"></script>
+    <script type="module" src="/reader.js?v=ipad-pages-6"></script>
   </body>
 </html>

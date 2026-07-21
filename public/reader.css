@@ -288,6 +288,200 @@ h2 {
   gap: 12px;
 }
 
+.library-notes[hidden],
+.books[hidden],
+.annotation-home-entry[hidden] {
+  display: none;
+}
+
+.annotation-home-entry {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-bottom: 28px;
+  border: 1px solid rgba(185, 120, 93, 0.14);
+  border-radius: 20px;
+  padding: 15px 16px;
+  background: linear-gradient(135deg, rgba(255, 250, 242, 0.9), rgba(185, 120, 93, 0.08));
+  color: var(--text);
+  text-align: left;
+}
+
+.annotation-home-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 19px;
+}
+
+.annotation-home-entry strong,
+.annotation-home-entry small {
+  display: block;
+}
+
+.annotation-home-entry strong {
+  font-size: 15px;
+}
+
+.annotation-home-entry small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.annotation-home-arrow {
+  color: var(--accent);
+  font-family: Georgia, serif;
+  font-size: 26px;
+}
+
+.library-notes {
+  width: 100%;
+}
+
+.library-notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.library-notes-list {
+  display: grid;
+  gap: 14px;
+}
+
+.library-note-book {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel);
+}
+
+.library-note-book summary {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.library-note-book summary::-webkit-details-marker {
+  display: none;
+}
+
+.library-note-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 58px;
+  border-radius: 6px 10px 10px 6px;
+  background: linear-gradient(145deg, #d9b39b, #b9785d);
+  color: #fffaf2;
+  font-family: "Songti SC", Georgia, serif;
+  font-size: 20px;
+  box-shadow: 0 8px 18px rgba(85, 58, 38, 0.15);
+}
+
+.library-note-identity strong,
+.library-note-identity small {
+  display: block;
+}
+
+.library-note-identity small {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.library-note-chevron {
+  color: var(--muted);
+  font-size: 20px;
+  transition: transform 180ms ease;
+}
+
+.library-note-book[open] .library-note-chevron {
+  transform: rotate(180deg);
+}
+
+.library-book-annotations {
+  display: grid;
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
+.library-annotation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 18px;
+  padding: 17px 18px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.annotation-index-meta,
+.annotation-index-kind {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.annotation-index-quote {
+  overflow: hidden;
+  color: var(--muted);
+  font-family: "Songti SC", "STSong", Georgia, serif;
+  font-size: 14px;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.annotation-index-note {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.library-annotation-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 3px;
+}
+
+.jump-to-source {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.library-notes-empty {
+  padding: 40px 20px;
+  color: var(--muted);
+  text-align: center;
+}
+
 .books {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px 16px;
