@@ -19,6 +19,7 @@ import {
   readBookCover,
   readCard,
   readChunk,
+  renameBook,
   replyToAnnotation,
   searchChunks,
   submitUserNotes,
@@ -104,6 +105,11 @@ export async function handleApi(req, res, url, options = {}) {
 
   if (req.method === "DELETE" && parts.length === 3 && parts[1] === "books") {
     return sendJson(res, 200, await deleteBook(parts[2]));
+  }
+
+  if (req.method === "PATCH" && parts.length === 3 && parts[1] === "books") {
+    const body = await readBody(req, { maxBytes });
+    return sendJson(res, 200, await renameBook(parts[2], body.title));
   }
 
   if (req.method === "GET" && parts.length === 5 && parts[1] === "books" && parts[3] === "chunks") {

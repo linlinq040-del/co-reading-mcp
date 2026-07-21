@@ -467,6 +467,35 @@ export async function loadManifest(bookId) {
   return manifest;
 }
 
+export async function renameBook(bookId, title) {
+  const nextTitle = String(title || "")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!bookId) throw new Error("bookId is required");
+  if (!nextTitle) throw new Error("title is required");
+  if (nextTitle.length > 120) throw new Error("title must be 120 characters or fewer");
+
+  return withWriteLock(async () => {
+    const manifest = await loadManifest(bookId);
+    const manifestPath = resolveInside(booksDir, bookId, "manifest.json");
+    const updated = {
+      ...manifest,
+      originalTitle: manifest.originalTitle || manifest.title || null,
+      title: nextTitle,
+      renamedAt: new Date().toISOString(),
+    };
+    await writeJson(manifestPath, updated);
+    manifestCache.delete(manifestPath);
+    return {
+      bookId: updated.bookId,
+      title: updated.title,
+      author: updated.author || null,
+      renamedAt: updated.renamedAt,
+    };
+  });
+}
+
 async function annotationSummary() {
   const signature = await fileSignature(annotationsPath);
   if (annotationCache.signature === signature) {
