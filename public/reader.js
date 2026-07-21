@@ -133,6 +133,77 @@ function cleanBookTitle(value) {
   return (candidates[0] || raw).replace(/[_-]+$/g, "").trim();
 }
 
+function searchableText(value) {
+  const source = String(value || "");
+  let normalized = "";
+  const positions = [];
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (!/[\p{L}\p{N}]/u.test(character)) continue;
+    normalized += character.toLocaleLowerCase();
+    positions.push(index);
+  }
+  return { normalized, positions };
+}
+
+function findQuoteAnchor(text, note) {
+  const quote = String(note?.quote || "");
+  if (!quote) return null;
+  const requestedOffset = Number(note?.quoteOffset);
+  if (
+    Number.isInteger(requestedOffset) &&
+    requestedOffset >= 0 &&
+    text.slice(requestedOffset, requestedOffset + quote.length) === quote
+  ) {
+    return { start: requestedOffset, end: requestedOffset + quote.length, quality: "exact" };
+  }
+
+  const exactStart = text.indexOf(quote);
+  if (exactStart >= 0) return { start: exactStart, end: exactStart + quote.length, quality: "exact" };
+
+  const source = searchableText(text);
+  const target = searchableText(quote);
+  if (!source.normalized || !target.normalized) return null;
+  const normalizedStart = source.normalized.indexOf(target.normalized);
+  if (normalizedStart >= 0) {
+    return {
+      start: source.positions[normalizedStart],
+      end: source.positions[normalizedStart + target.normalized.length - 1] + 1,
+      quality: "normalized",
+    };
+  }
+
+  // Ember may occasionally paraphrase the quoted passage. Anchor the note to
+  // the longest verbatim fragment that still occurs in the chapter.
+  const previous = new Uint32Array(target.normalized.length + 1);
+  let bestLength = 0;
+  let bestSourceEnd = 0;
+  for (let sourceIndex = 1; sourceIndex <= source.normalized.length; sourceIndex += 1) {
+    let diagonal = 0;
+    for (let targetIndex = 1; targetIndex <= target.normalized.length; targetIndex += 1) {
+      const old = previous[targetIndex];
+      if (source.normalized[sourceIndex - 1] === target.normalized[targetIndex - 1]) {
+        previous[targetIndex] = diagonal + 1;
+        if (previous[targetIndex] > bestLength) {
+          bestLength = previous[targetIndex];
+          bestSourceEnd = sourceIndex;
+        }
+      } else {
+        previous[targetIndex] = 0;
+      }
+      diagonal = old;
+    }
+  }
+  const minimum = Math.max(5, Math.min(12, Math.floor(target.normalized.length * 0.35)));
+  if (bestLength < minimum) return null;
+  const bestSourceStart = bestSourceEnd - bestLength;
+  return {
+    start: source.positions[bestSourceStart],
+    end: source.positions[bestSourceEnd - 1] + 1,
+    quality: "fragment",
+  };
+}
+
 function replyClass(reply, root) {
   const sameAuthor = String(reply.author || "").toLowerCase() === String(root.author || "").toLowerCase();
   return sameAuthor ? "reply root-author" : "reply other-author";
@@ -377,17 +448,12 @@ function renderText() {
       return left - right;
     });
   for (const note of rootNotes) {
-    const quote = String(note.quote || "");
-    const requestedOffset = Number(note.quoteOffset);
-    const start =
-      Number.isInteger(requestedOffset) && requestedOffset >= 0 && text.slice(requestedOffset, requestedOffset + quote.length) === quote
-        ? requestedOffset
-        : text.indexOf(quote);
-    if (!quote || start < 0) continue;
-    const end = start + quote.length;
+    const anchor = findQuoteAnchor(text, note);
+    if (!anchor) continue;
+    const { start, end } = anchor;
     if (occupied.some((range) => start < range.end && end > range.start)) continue;
     occupied.push({ start, end });
-    highlights.push({ start, end, note, shared: sharedIds.has(note.id) });
+    highlights.push({ start, end, note, shared: sharedIds.has(note.id), anchorQuality: anchor.quality });
   }
 
   if (isBookSpreadLayout()) {
