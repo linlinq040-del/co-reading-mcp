@@ -458,6 +458,66 @@ h2 {
   line-height: 1.55;
 }
 
+.passage-conversation {
+  gap: 12px;
+}
+
+.passage-quote {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent-soft);
+  border-radius: 0 12px 12px 0;
+  background: rgba(185, 120, 93, 0.055);
+  -webkit-line-clamp: 3;
+}
+
+.passage-voices {
+  display: grid;
+  gap: 9px;
+}
+
+.passage-voice {
+  position: relative;
+  border-radius: 14px;
+  padding: 12px 14px 11px;
+}
+
+.passage-voice.my-voice {
+  margin-right: 9%;
+  background: rgba(185, 120, 93, 0.11);
+}
+
+.passage-voice.ember-voice {
+  margin-left: 9%;
+  background: rgba(151, 164, 157, 0.14);
+}
+
+.passage-speaker {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ember-voice .passage-speaker {
+  color: #74877e;
+}
+
+.passage-voice .annotation-index-kind {
+  display: block;
+  margin-top: 7px;
+  opacity: 0.78;
+}
+
+.conversation-mark {
+  color: var(--muted);
+  font-family: "Songti SC", Georgia, serif;
+  font-size: 12px;
+}
+
 .library-annotation-footer {
   display: flex;
   align-items: center;

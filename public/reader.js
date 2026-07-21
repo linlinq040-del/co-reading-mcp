@@ -25,6 +25,7 @@ const state = {
   pageTurning: false,
   spreadRanges: [],
   libraryAnnotations: [],
+  booksRenderSignature: "",
 };
 
 const $ = (id) => document.getElementById(id);
@@ -176,6 +177,19 @@ function renderInlineNote(note, notes) {
 }
 
 function renderBooks() {
+  const signature = JSON.stringify({
+    active: state.bookId,
+    books: state.books.map((book) => ({
+      id: book.bookId,
+      title: book.title,
+      author: book.author,
+      cover: book.coverUrl,
+      read: book.chunksRead,
+      total: book.chunkCount,
+    })),
+  });
+  if (signature === state.booksRenderSignature) return;
+  state.booksRenderSignature = signature;
   $("books").innerHTML = state.books
     .map((book) => {
       const total = book.chunkCount || 0;
@@ -229,6 +243,31 @@ function rootAnnotationId(note, notes) {
   return current?.id || note.id;
 }
 
+function passageGroups(notes) {
+  const groups = new Map();
+  const roots = notes.filter((note) => !note.parentId);
+  for (const root of roots) {
+    const quoteKey = String(root.quote || "").replace(/\s+/g, "").trim();
+    const key = `${root.chunkId || ""}::${quoteKey || root.id}`;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        chunkId: root.chunkId,
+        quote: root.quote || "",
+        rootId: root.id,
+        createdAt: root.createdAt || "",
+        notes: [],
+      });
+    }
+    groups.get(key).notes.push(root);
+  }
+  for (const note of notes.filter((item) => item.parentId)) {
+    const rootId = rootAnnotationId(note, notes);
+    const group = [...groups.values()].find((item) => item.notes.some((entry) => entry.id === rootId));
+    if (group) group.notes.push(note);
+  }
+  return [...groups.values()].sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+}
+
 function renderLibraryNotes() {
   const list = $("library-notes-list");
   if (!list) return;
@@ -251,18 +290,21 @@ function renderLibraryNotes() {
         <span class="library-note-chevron">⌄</span>
       </summary>
       <div class="library-book-annotations">
-        ${bookNotes.map((note) => {
-          const rootId = rootAnnotationId(note, bookNotes);
-          return `<article class="library-annotation-card">
-            <span class="annotation-index-meta">${escapeHtml(formatIdentity(note.author))} · ${escapeHtml(note.chunkId || "未知章节")}</span>
-            ${note.quote ? `<blockquote class="annotation-index-quote">${escapeHtml(note.quote)}</blockquote>` : ""}
-            <p class="annotation-index-note">${escapeHtml(note.note || "")}</p>
-            <footer class="library-annotation-footer">
+        ${passageGroups(bookNotes).map((passage) => `<article class="library-annotation-card passage-conversation">
+          <span class="annotation-index-meta">${escapeHtml(passage.chunkId || "未知章节")} · ${passage.notes.length} 条页边话</span>
+          ${passage.quote ? `<blockquote class="annotation-index-quote passage-quote">${escapeHtml(passage.quote)}</blockquote>` : ""}
+          <div class="passage-voices">
+            ${passage.notes.map((note) => `<section class="passage-voice ${String(note.author || "").toLowerCase() === "claude" ? "ember-voice" : "my-voice"}">
+              <span class="passage-speaker">${escapeHtml(formatIdentity(note.author))}</span>
+              <p class="annotation-index-note">${escapeHtml(note.note || "")}</p>
               <span class="annotation-index-kind">${escapeHtml(note.kind || "note")}${(note.status || "") === "open" ? " · 尚未发送" : ""}</span>
-              <button type="button" class="jump-to-source" data-jump-book="${escapeHtml(book.bookId)}" data-jump-chunk="${escapeHtml(note.chunkId)}" data-jump-note="${escapeHtml(rootId)}">回到原文</button>
-            </footer>
-          </article>`;
-        }).join("")}
+            </section>`).join("")}
+          </div>
+          <footer class="library-annotation-footer">
+            <span class="conversation-mark">同一页上的回声</span>
+            <button type="button" class="jump-to-source" data-jump-book="${escapeHtml(book.bookId)}" data-jump-chunk="${escapeHtml(passage.chunkId)}" data-jump-note="${escapeHtml(passage.rootId)}">回到原文</button>
+          </footer>
+        </article>`).join("")}
       </div>
     </details>`)
     .join("");
