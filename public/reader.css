@@ -1012,19 +1012,15 @@ button:disabled {
   }
 
   body.has-book:not(.has-chunk) .sidebar {
-    display: block;
-    grid-column: 1;
-    border-right: 1px solid var(--line);
-  }
-
-  body.has-book:not(.has-chunk) .sidebar .books {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px 14px;
+    display: none;
   }
 
   body.has-book:not(.has-chunk) .chapters {
     display: block;
-    grid-column: 2;
+    grid-column: 1 / -1;
+    width: min(920px, 100%);
+    margin-inline: auto;
+    border-right: 0;
   }
 
   body.has-chunk .sidebar {
@@ -1035,6 +1031,17 @@ button:disabled {
     display: block;
     grid-column: 1;
     border-right: 1px solid var(--line);
+  }
+
+  body.has-book:not(.has-chunk) .chunk-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  body.has-book:not(.has-chunk) .panel-head h2 {
+    overflow-wrap: anywhere;
+    font-size: clamp(27px, 3.4vw, 38px);
+    line-height: 1.2;
   }
 
   body.has-chunk .reader {
@@ -1115,25 +1122,26 @@ button:disabled {
   .reader {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr);
-    padding-inline: clamp(36px, 6vw, 90px);
+    padding: max(20px, env(safe-area-inset-top)) clamp(30px, 4vw, 58px) max(82px, env(safe-area-inset-bottom));
     overflow: hidden;
   }
 
   .reader-head {
     grid-column: 1;
-    top: -28px;
+    top: -20px;
+    padding-block: 8px 12px;
   }
 
   .text {
     grid-column: 1;
-    height: calc(100svh - 190px);
-    min-height: 480px;
+    height: calc(100svh - 168px);
+    min-height: 500px;
     overflow-x: auto;
     overflow-y: hidden;
-    column-width: calc((100vw - clamp(260px, 28vw, 380px)) / 2);
-    column-gap: clamp(58px, 7vw, 96px);
+    column-width: calc((100vw - clamp(246px, 25vw, 340px)) / 2);
+    column-gap: clamp(54px, 6vw, 78px);
     column-fill: auto;
-    padding: 38px clamp(42px, 5vw, 72px) 48px;
+    padding: clamp(42px, 5vh, 58px) clamp(46px, 4.6vw, 64px) 52px;
     border: 1px solid rgba(111, 87, 62, 0.1);
     border-radius: 18px 18px 10px 10px;
     background:
@@ -1143,6 +1151,16 @@ button:disabled {
     scroll-behavior: smooth;
     scrollbar-width: thin;
     scrollbar-color: var(--accent-soft) transparent;
+    font-size: clamp(22px, 1.85vw, 25px);
+    line-height: 1.92;
+    text-align: justify;
+    text-justify: inter-ideograph;
+  }
+
+  .text.short-spread {
+    column-count: 2;
+    column-width: auto;
+    column-fill: balance;
   }
 
   .margins {
@@ -1157,8 +1175,34 @@ button:disabled {
 
   .note-form,
   .submitbar {
-    left: clamp(36px, 6vw, 90px);
-    right: clamp(36px, 6vw, 90px);
+    left: clamp(30px, 4vw, 58px);
+    right: clamp(30px, 4vw, 58px);
+  }
+}
+
+/* iPad Air 11-inch landscape (1180 × 820 CSS viewport). */
+@media (min-width: 1120px) and (max-width: 1220px) and (min-height: 740px) and (max-height: 880px) and (orientation: landscape) {
+  .reader {
+    padding-inline: 42px;
+  }
+
+  .reader-head {
+    min-height: 82px;
+  }
+
+  .text {
+    height: calc(100svh - 170px);
+    column-width: 416px;
+    column-gap: 72px;
+    padding: 48px 54px 54px;
+    font-size: 23px;
+    line-height: 1.95;
+  }
+
+  .note-form,
+  .submitbar {
+    left: 42px;
+    right: 42px;
   }
 }
 

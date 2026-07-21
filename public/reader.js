@@ -204,6 +204,7 @@ function renderChunks() {
 function renderText() {
   if (!state.chunk) return;
   const text = state.chunk.text || "";
+  $("text").classList.toggle("short-spread", isBookSpreadLayout() && text.trim().length < 900);
   const notes = state.annotations.filter((item) => item.chunkId === state.chunkId);
   const sharedIds = sharedNoteIdSet(notes);
   const highlights = [];
@@ -597,6 +598,7 @@ function clearBookSelection() {
   $("chunk-file").textContent = "No chapter selected";
   $("chunk-title").textContent = "Open a chapter to start reading";
   $("text").innerHTML = `<p class="empty">Select a book and chapter. Highlight text to leave a note for Claude.</p>`;
+  $("text").classList.remove("short-spread");
   $("mark-read").disabled = true;
   $("continue-reading").disabled = true;
   $("show-card").disabled = true;
