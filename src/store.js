@@ -1354,6 +1354,34 @@ export async function deleteOpenUserAnnotation(annotationId) {
   });
 }
 
+export async function repairAnnotationAnchor(annotationId, { anchorQuote, anchorOffset } = {}) {
+  return withWriteLock(async () => {
+    if (!annotationId) throw new Error("annotationId is required");
+    if (!anchorQuote) throw new Error("anchorQuote is required");
+    const offset = Number(anchorOffset);
+    if (!Number.isInteger(offset) || offset < 0) throw new Error("anchorOffset must be a non-negative integer");
+
+    const annotations = await readAllAnnotations();
+    const target = annotations.find((annotation) => annotation.id === annotationId);
+    if (!target) throw new Error(`Unknown annotationId: ${annotationId}`);
+    const chunk = await readChunk(target.bookId, target.chunkId);
+    if (chunk.text.slice(offset, offset + anchorQuote.length) !== anchorQuote) {
+      throw new Error("The repaired anchor does not match the chapter text");
+    }
+
+    const repairedAt = new Date().toISOString();
+    let repaired = null;
+    const updated = annotations.map((annotation) => {
+      if (annotation.id !== annotationId) return annotation;
+      repaired = { ...annotation, anchorQuote, anchorOffset: offset, anchorRepairedAt: repairedAt };
+      return repaired;
+    });
+    await writeJsonl(annotationsPath, updated);
+    invalidateAnnotationCache();
+    return repaired;
+  });
+}
+
 export async function submitUserNotes({
   bookId,
   chunkId,

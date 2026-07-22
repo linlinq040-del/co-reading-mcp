@@ -19,6 +19,7 @@ import {
   readBookCover,
   readCard,
   readChunk,
+  repairAnnotationAnchor,
   renameBook,
   replyToAnnotation,
   searchChunks,
@@ -138,6 +139,10 @@ export async function handleApi(req, res, url, options = {}) {
 
   if (req.method === "DELETE" && parts.length === 3 && parts[1] === "annotations") {
     return sendJson(res, 200, await deleteOpenUserAnnotation(parts[2]));
+  }
+
+  if (req.method === "PATCH" && parts.length === 4 && parts[1] === "annotations" && parts[3] === "anchor") {
+    return sendJson(res, 200, await repairAnnotationAnchor(parts[2], await readBody(req, { maxBytes })));
   }
 
   if (req.method === "GET" && parts.length === 2 && parts[1] === "cards") {
