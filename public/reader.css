@@ -1337,6 +1337,211 @@ h2 {
   line-height: 16px;
 }
 
+.ember-inbox-toggle {
+  position: fixed;
+  z-index: 10;
+  right: 28px;
+  bottom: 88px;
+  display: none;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  border: 1px solid color-mix(in srgb, var(--ember) 34%, white);
+  border-radius: 999px;
+  padding: 0 13px;
+  background: color-mix(in srgb, var(--theme-paper, var(--panel-strong)) 90%, transparent);
+  color: var(--ember, var(--accent));
+  box-shadow: 0 14px 38px rgba(74, 51, 33, 0.14);
+  backdrop-filter: blur(18px);
+  font-weight: 850;
+}
+
+body.has-chunk .ember-inbox-toggle {
+  display: flex;
+}
+
+.ember-inbox-toggle.has-new {
+  animation: ember-reply-arrived 620ms ease both;
+}
+
+.ember-inbox-count {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  padding: 0 5px;
+  background: var(--ember, var(--accent));
+  color: white;
+  font-size: 11px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.ember-inbox {
+  position: fixed;
+  z-index: 32;
+  top: max(20px, env(safe-area-inset-top));
+  right: 20px;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  width: min(480px, calc(100vw - 40px));
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  padding: 20px;
+  background: color-mix(in srgb, var(--theme-paper, var(--panel-strong)) 96%, transparent);
+  color: var(--text);
+  box-shadow: 0 30px 90px rgba(35, 27, 22, 0.28);
+  backdrop-filter: blur(24px);
+}
+
+.ember-inbox[hidden] {
+  display: none;
+}
+
+.ember-inbox-head {
+  position: sticky;
+  z-index: 2;
+  top: -20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin: -20px -20px 16px;
+  border-bottom: 1px solid var(--line);
+  padding: 20px;
+  background: color-mix(in srgb, var(--theme-paper, var(--panel-strong)) 94%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+.ember-inbox-head h2 {
+  margin-top: 3px;
+  font-size: 24px;
+}
+
+.ember-inbox-head small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.ember-inbox-list {
+  display: grid;
+  gap: 13px;
+}
+
+.ember-inbox-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--ember, var(--accent));
+  border-radius: 18px;
+  padding: 15px;
+  background: color-mix(in srgb, var(--theme-paper-2, var(--panel)) 88%, transparent);
+}
+
+.ember-inbox-card > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ember, var(--accent));
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.ember-inbox-location,
+.ember-inbox-card blockquote,
+.ember-inbox-parent p,
+.ember-inbox-message p,
+.ember-inbox-empty p {
+  margin: 0;
+}
+
+.ember-inbox-location {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.ember-inbox-card blockquote {
+  max-height: 5.2em;
+  overflow: auto;
+  border-left: 3px solid var(--accent-soft);
+  padding: 9px 11px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  color: var(--muted);
+  font-family: "Songti SC", "STSong", Georgia, serif;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.ember-inbox-parent,
+.ember-inbox-message {
+  border-radius: 13px;
+  padding: 11px 12px;
+}
+
+.ember-inbox-parent {
+  background: color-mix(in srgb, var(--mine) 12%, var(--theme-paper, white));
+}
+
+.ember-inbox-message {
+  background: color-mix(in srgb, var(--ember) 13%, var(--theme-paper, white));
+}
+
+.ember-inbox-parent small,
+.ember-inbox-message small {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.ember-inbox-parent p,
+.ember-inbox-message p {
+  line-height: 1.55;
+}
+
+.ember-inbox-reply-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.ember-inbox-reply-form textarea {
+  min-height: 64px;
+}
+
+.ember-inbox-more {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid color-mix(in srgb, var(--ember) 28%, var(--line));
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--ember) 8%, var(--theme-paper, white));
+  color: var(--ember, var(--accent));
+  font-weight: 850;
+}
+
+.ember-inbox-empty {
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.ember-inbox-empty > span {
+  font-size: 36px;
+}
+
+.ember-inbox-empty strong {
+  color: var(--text);
+}
+
+@keyframes ember-reply-arrived {
+  0%, 100% { transform: translateY(0); }
+  45% { transform: translateY(-5px); }
+}
+
 .tools-close {
   width: 38px;
   height: 38px;

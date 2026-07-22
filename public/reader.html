@@ -18,7 +18,7 @@
     <link rel="icon" type="image/png" href="/app-icon.png?v=2" />
     <link rel="apple-touch-icon" sizes="180x180" href="/app-icon.png?v=2" />
     <link rel="preload" as="image" href="/loading-cat-rabbit.webp" type="image/webp" />
-    <link rel="stylesheet" href="/reader.css?v=theme-v8-anchor-5" />
+    <link rel="stylesheet" href="/reader.css?v=theme-v8-resume-replies-2" />
   </head>
   <body>
     <div id="splash" class="splash-screen" role="status" aria-live="polite">
@@ -134,6 +134,24 @@
           <span id="tools-count" class="tools-count" hidden>0</span>
         </button>
 
+        <button id="ember-inbox-toggle" class="ember-inbox-toggle" type="button" aria-expanded="false" aria-controls="ember-inbox" title="查看 Ember 的最新回复">
+          <span aria-hidden="true">↩</span>
+          <span class="ember-inbox-label">Ember 回信</span>
+          <span id="ember-inbox-count" class="ember-inbox-count" hidden>0</span>
+        </button>
+
+        <aside id="ember-inbox" class="ember-inbox" hidden aria-label="Ember 最新回复">
+          <header class="ember-inbox-head">
+            <div>
+              <p class="eyebrow">NEW FROM EMBER</p>
+              <h2>Ember 的新回信</h2>
+              <small>只收本次打开书房后新到的几条</small>
+            </div>
+            <button id="ember-inbox-close" class="icon-button" type="button" aria-label="关闭 Ember 回信">×</button>
+          </header>
+          <div id="ember-inbox-list" class="ember-inbox-list"></div>
+        </aside>
+
         <footer id="reading-tools" class="submitbar" aria-hidden="true">
           <span id="status">你的笔记会先安静地留在这里。</span>
           <div class="submit-actions">
@@ -181,6 +199,6 @@
         </div>
       </section>
     </aside>
-    <script type="module" src="/reader.js?v=theme-v8-anchor-5"></script>
+    <script type="module" src="/reader.js?v=theme-v8-resume-replies-2"></script>
   </body>
 </html>

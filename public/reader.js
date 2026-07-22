@@ -34,6 +34,16 @@ const state = {
   repairingAnnotationAnchors: new Set(),
   chunkOpenedAt: 0,
   chapterHadReadingMotion: false,
+  positionSaveTimer: null,
+  lastPositionSignature: "",
+  replyInboxSince: new Date().toISOString(),
+  replyInboxAnnotations: [],
+  replyInboxItems: [],
+  replyInboxVisibleCount: 5,
+  replyInboxDrafts: {},
+  replyInboxSignature: "",
+  knownReplyInboxIds: new Set(),
+  replyInboxInitialized: false,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -124,6 +134,62 @@ function isBookSpreadLayout() {
   return window.matchMedia("(min-width: 981px) and (max-width: 1366px) and (orientation: landscape)").matches;
 }
 
+function readingPositionPayload() {
+  if (!state.bookId || !state.chunkId || !state.chunk) return null;
+  if (isBookSpreadLayout()) {
+    return {
+      bookId: state.bookId,
+      chunkId: state.chunkId,
+      spreadPage: state.spreadPage,
+      scrollRatio: 0,
+      layout: "spread",
+    };
+  }
+  const text = $("text");
+  if (!text) return null;
+  const rect = text.getBoundingClientRect();
+  const textTop = window.scrollY + rect.top;
+  const readableHeight = Math.max(1, text.scrollHeight - Math.min(window.innerHeight * 0.55, 480));
+  const scrollRatio = Math.max(0, Math.min(1, (window.scrollY - textTop) / readableHeight));
+  return {
+    bookId: state.bookId,
+    chunkId: state.chunkId,
+    spreadPage: 0,
+    scrollRatio,
+    layout: "scroll",
+  };
+}
+
+function saveReadingPosition({ immediate = false, keepalive = false } = {}) {
+  clearTimeout(state.positionSaveTimer);
+  const save = () => {
+    const payload = readingPositionPayload();
+    if (!payload) return;
+    const signature = JSON.stringify(payload);
+    if (!keepalive && signature === state.lastPositionSignature) return;
+    state.lastPositionSignature = signature;
+    api("/api/reading-position", { method: "POST", body: payload, keepalive }).catch((error) => {
+      console.warn("Could not save reading position", error);
+      if (!keepalive) state.lastPositionSignature = "";
+    });
+  };
+  if (immediate) save();
+  else state.positionSaveTimer = setTimeout(save, 900);
+}
+
+function restoreScrollPosition(position) {
+  if (!position || isBookSpreadLayout()) return;
+  const ratio = Math.max(0, Math.min(1, Number(position.scrollRatio) || 0));
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const text = $("text");
+    if (!text) return;
+    const rect = text.getBoundingClientRect();
+    const textTop = window.scrollY + rect.top;
+    const readableHeight = Math.max(1, text.scrollHeight - Math.min(window.innerHeight * 0.55, 480));
+    window.scrollTo({ top: Math.max(0, textTop + readableHeight * ratio), behavior: "auto" });
+  }));
+}
+
 function scrollToPanel(selector) {
   if (!isMobileLayout()) return;
   requestAnimationFrame(() => {
@@ -142,15 +208,15 @@ function showToast(message) {
 
 function formatIdentity(author) {
   const value = String(author || "unknown").toLowerCase();
-  if (value === "user" || value === "koshi") return "我";
-  if (value === "claude") return "Ember";
+  if (["user", "koshi", "human", "you"].includes(value)) return "我";
+  if (value === "claude" || value === "ember" || value === "assistant") return "Ember";
   return value;
 }
 
 function annotationTone(author) {
   const value = String(author || "").toLowerCase();
-  if (value === "claude" || value === "ember") return "ember";
-  if (value === "user" || value === "koshi") return "mine";
+  if (value === "claude" || value === "ember" || value === "assistant") return "ember";
+  if (["user", "koshi", "human", "you"].includes(value)) return "mine";
   return "neutral";
 }
 
@@ -311,6 +377,89 @@ function renderThread(note, notes) {
       <button type="submit" class="primary-button">Reply</button>
     </form>
   </div>`;
+}
+
+function latestEmberReplies(annotations) {
+  const byId = new Map(annotations.map((note) => [note.id, note]));
+  const since = new Date(state.replyInboxSince).getTime();
+  return annotations
+    .filter((reply) => {
+      if (!reply.parentId || annotationTone(reply.author) !== "ember") return false;
+      const parent = byId.get(reply.parentId);
+      if (!parent || annotationTone(parent.author) !== "mine") return false;
+      return new Date(reply.createdAt || 0).getTime() > since;
+    })
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+    .map((reply) => ({ reply, parent: byId.get(reply.parentId) }));
+}
+
+function renderReplyInbox() {
+  const list = $("ember-inbox-list");
+  const count = $("ember-inbox-count");
+  const button = $("ember-inbox-toggle");
+  if (!list || !count || !button) return;
+  const items = state.replyInboxItems.slice(0, state.replyInboxVisibleCount);
+  count.textContent = state.replyInboxItems.length > 9 ? "9+" : String(state.replyInboxItems.length);
+  count.hidden = state.replyInboxItems.length === 0;
+  button.classList.toggle("has-new", state.replyInboxItems.length > 0);
+  const signature = JSON.stringify(items.map(({ reply, parent }) => [reply.id, reply.note, reply.createdAt, parent?.id, parent?.note]));
+  if (signature === state.replyInboxSignature) return;
+  if (document.activeElement?.closest?.(".ember-inbox-reply-form")) return;
+  state.replyInboxSignature = signature;
+  if (!items.length) {
+    list.innerHTML = `<div class="ember-inbox-empty"><span>☾</span><strong>暂时没有新回信</strong><p>继续读吧，Ember 的下一条回复会出现在这里。</p></div>`;
+    return;
+  }
+  const books = new Map(state.books.map((book) => [book.bookId, book]));
+  const cards = items.map(({ reply, parent }) => {
+    const book = books.get(reply.bookId);
+    const draft = state.replyInboxDrafts[reply.id] || "";
+    return `<article class="ember-inbox-card" data-inbox-reply="${escapeHtml(reply.id)}">
+      <header>
+        <span>Ember 刚刚回了你</span>
+        <time>${escapeHtml(new Date(reply.createdAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }))}</time>
+      </header>
+      <p class="ember-inbox-location">《${escapeHtml(cleanBookTitle(book?.title || reply.bookId || "未命名书籍"))}》 · ${escapeHtml(reply.chunkId || "未知章节")}</p>
+      ${reply.quote ? `<blockquote>${escapeHtml(reply.quote)}</blockquote>` : ""}
+      <section class="ember-inbox-parent"><small>他回复的是你的这条：</small><p>${escapeHtml(parent?.note || "")}</p></section>
+      <section class="ember-inbox-message"><small>Ember：</small><p>${escapeHtml(reply.note || "")}</p></section>
+      <form class="ember-inbox-reply-form" data-inbox-parent="${escapeHtml(reply.id)}">
+        <textarea rows="2" placeholder="直接回 Ember……">${escapeHtml(draft)}</textarea>
+        <button class="primary-button" type="submit">回复</button>
+      </form>
+    </article>`;
+  }).join("");
+  const remaining = state.replyInboxItems.length - items.length;
+  list.innerHTML = `${cards}${remaining > 0 ? `<button class="ember-inbox-more" type="button" data-inbox-more>还有 ${remaining} 条，继续查看</button>` : ""}`;
+}
+
+async function refreshReplyInbox({ announce = true } = {}) {
+  const annotations = await api("/api/annotations");
+  const items = latestEmberReplies(annotations);
+  const ids = new Set(items.map(({ reply }) => reply.id));
+  if (state.replyInboxInitialized && announce) {
+    const fresh = [...ids].filter((id) => !state.knownReplyInboxIds.has(id));
+    if (fresh.length) showToast(`Ember 新回了你 ${fresh.length} 条批注`);
+  }
+  state.replyInboxAnnotations = annotations;
+  state.replyInboxItems = items;
+  state.knownReplyInboxIds = ids;
+  state.replyInboxInitialized = true;
+  renderReplyInbox();
+}
+
+function setReplyInbox(open) {
+  const panel = $("ember-inbox");
+  const button = $("ember-inbox-toggle");
+  if (!panel || !button) return;
+  panel.hidden = !open;
+  button.setAttribute("aria-expanded", String(open));
+  document.body.classList.toggle("ember-inbox-open", open);
+  if (open) {
+    state.replyInboxVisibleCount = 5;
+    state.replyInboxSignature = "";
+    renderReplyInbox();
+  }
 }
 
 function renderInlineNote(note, notes) {
@@ -737,6 +886,7 @@ function turnSpread(direction) {
     if (target !== state.spreadPage) {
       state.spreadPage = target;
       renderText();
+      saveReadingPosition({ immediate: true });
       return;
     }
     try {
@@ -1069,7 +1219,8 @@ async function loadBooks() {
   renderBooks();
 }
 
-async function selectBook(bookId) {
+async function selectBook(bookId, { resume = true } = {}) {
+  saveReadingPosition({ immediate: true });
   state.bookId = bookId;
   state.chunkId = null;
   state.chunk = null;
@@ -1090,6 +1241,14 @@ async function selectBook(bookId) {
   renderBooks();
   renderChunks();
   renderAnnotations();
+  if (resume) {
+    const progress = await api(`/api/progress?bookId=${encodeURIComponent(bookId)}`);
+    const position = progress?.readingPosition;
+    if (position?.chunkId && state.chunks.some((chunk) => chunk.id === position.chunkId)) {
+      await selectChunk(position.chunkId, { position });
+      return;
+    }
+  }
   scrollToPanel(".chapters");
 }
 
@@ -1150,9 +1309,10 @@ async function renameBookOnShelf(bookId) {
   $("status").textContent = `书名已改为《${updated.title}》。`;
 }
 
-async function selectChunk(chunkId) {
+async function selectChunk(chunkId, { position = null } = {}) {
+  saveReadingPosition({ immediate: true });
   state.chunkId = chunkId;
-  state.spreadPage = 0;
+  state.spreadPage = position?.chunkId === chunkId ? Math.max(0, Number(position.spreadPage) || 0) : 0;
   state.activeAnnotationId = null;
   state.chunk = await api(`/api/books/${encodeURIComponent(state.bookId)}/chunks/${encodeURIComponent(chunkId)}`);
   state.chunkOpenedAt = Date.now();
@@ -1167,8 +1327,10 @@ async function selectChunk(chunkId) {
   renderText();
   renderAnnotations();
   refreshCards();
-  requestAnimationFrame(() => updatePageTurner({ reset: true }));
+  requestAnimationFrame(() => updatePageTurner());
   scrollToPanel(".reader");
+  if (position?.chunkId === chunkId) restoreScrollPosition(position);
+  else saveReadingPosition();
 }
 
 async function markChunkRead(bookId, chunkId, { automatic = false } = {}) {
@@ -1335,7 +1497,7 @@ $("library-notes-list").addEventListener("click", async (event) => {
   const button = event.target.closest("[data-jump-book]");
   if (!button) return;
   await setLibraryNotes(false);
-  await selectBook(button.dataset.jumpBook);
+  await selectBook(button.dataset.jumpBook, { resume: false });
   await selectChunk(button.dataset.jumpChunk);
   activateAnnotation(button.dataset.jumpNote, { scroll: true });
 });
@@ -1450,12 +1612,12 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("compositionstart", (event) => {
-  if (!event.target.closest?.(".reply-form, .note-form")) return;
+  if (!event.target.closest?.(".reply-form, .note-form, .ember-inbox-reply-form")) return;
   state.composing = true;
 });
 
 document.addEventListener("compositionend", (event) => {
-  if (!event.target.closest?.(".reply-form, .note-form")) return;
+  if (!event.target.closest?.(".reply-form, .note-form, .ember-inbox-reply-form")) return;
   state.composing = false;
 });
 
@@ -1491,7 +1653,7 @@ $("continue-reading").addEventListener("click", async () => {
     $("status").textContent = next?.message || "Nothing left to continue.";
     return;
   }
-  await selectChunk(chunkId);
+  await selectChunk(chunkId, { position: next.readingPosition || next.progress?.readingPosition || null });
 });
 
 $("refresh").addEventListener("click", () => refreshCurrent({ force: true }).catch(showError));
@@ -1507,23 +1669,37 @@ const noteReadingMotion = () => {
   if (!state.chunk || isBookSpreadLayout()) return;
   state.chapterHadReadingMotion = true;
   maybeAutoMarkScrolledChapter();
+  saveReadingPosition();
 };
 window.addEventListener("scroll", noteReadingMotion, { passive: true });
 if (readingScrollTarget !== window) readingScrollTarget.addEventListener("scroll", noteReadingMotion, { passive: true });
 
 window.addEventListener("resize", () => {
-  requestAnimationFrame(() => updatePageTurner({ reset: true }));
+  requestAnimationFrame(() => updatePageTurner());
 });
 
 $("back-to-library").addEventListener("click", () => {
+  saveReadingPosition({ immediate: true });
   document.body.classList.remove("has-book", "has-chunk");
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
 $("back-to-chapters").addEventListener("click", () => {
+  saveReadingPosition({ immediate: true });
   document.body.classList.remove("has-chunk");
   document.body.classList.add("has-book");
   window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+window.addEventListener("pagehide", () => saveReadingPosition({ immediate: true, keepalive: true }));
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    saveReadingPosition({ immediate: true, keepalive: true });
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !$("ember-inbox").hidden) setReplyInbox(false);
 });
 
 $("show-card").addEventListener("click", openCardPanel);
@@ -1573,6 +1749,52 @@ $("import-file").addEventListener("change", async (event) => {
   }
 });
 
+$("ember-inbox-toggle").addEventListener("click", () => {
+  setReplyInbox($("ember-inbox").hidden);
+});
+
+$("ember-inbox-close").addEventListener("click", () => setReplyInbox(false));
+
+$("ember-inbox-list").addEventListener("input", (event) => {
+  const form = event.target.closest(".ember-inbox-reply-form");
+  if (!form || !event.target.matches("textarea")) return;
+  state.replyInboxDrafts[form.dataset.inboxParent] = event.target.value;
+});
+
+$("ember-inbox-list").addEventListener("click", (event) => {
+  if (!event.target.closest("[data-inbox-more]")) return;
+  state.replyInboxVisibleCount += 5;
+  state.replyInboxSignature = "";
+  renderReplyInbox();
+});
+
+$("ember-inbox-list").addEventListener("submit", async (event) => {
+  const form = event.target.closest(".ember-inbox-reply-form");
+  if (!form) return;
+  event.preventDefault();
+  const textarea = form.querySelector("textarea");
+  const note = textarea.value.trim();
+  if (!note) return;
+  const button = form.querySelector("button[type='submit']");
+  button.disabled = true;
+  try {
+    await api("/api/replies", {
+      method: "POST",
+      body: { parentId: form.dataset.inboxParent, note, author: "user", kind: "reply" },
+    });
+    delete state.replyInboxDrafts[form.dataset.inboxParent];
+    textarea.value = "";
+    state.replyInboxSignature = "";
+    await refreshCurrent({ force: true });
+    await refreshReplyInbox({ announce: false });
+    showToast("已经从回信里回复 Ember");
+  } catch (error) {
+    showError(error);
+  } finally {
+    button.disabled = false;
+  }
+});
+
 document.querySelectorAll("[data-open-theme-picker]").forEach((button) => {
   button.addEventListener("click", () => setThemePicker(true));
 });
@@ -1605,9 +1827,13 @@ function dismissSplash() {
 }
 
 applyTheme(document.documentElement.dataset.theme || "rabbit", { persist: false });
-loadBooks().catch(showError).finally(dismissSplash);
+loadBooks()
+  .then(() => refreshReplyInbox({ announce: false }))
+  .catch(showError)
+  .finally(dismissSplash);
 setTimeout(dismissSplash, 8000);
 setInterval(() => {
   if (document.hidden) return;
   refreshCurrent().catch(showError);
+  refreshReplyInbox().catch((error) => console.warn("Could not refresh Ember replies", error));
 }, 5000);
