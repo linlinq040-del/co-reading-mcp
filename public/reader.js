@@ -781,12 +781,14 @@ function showSpreadAnnotation(noteId) {
 
 function bindMarkActions() {
   document.querySelectorAll("mark[data-note-id]").forEach((mark) => {
-    const open = (event) => {
-      event.stopPropagation();
-      activateAnnotation(mark.dataset.noteId, { scroll: true });
-    };
-    mark.addEventListener("click", open);
-    mark.addEventListener("touchend", open);
+    mark.tabIndex = 0;
+    mark.setAttribute("role", "button");
+    mark.setAttribute("aria-label", "打开或收起这条批注");
+    mark.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      toggleAnnotation(mark.dataset.noteId, { scroll: true });
+    });
   });
 }
 
@@ -1214,6 +1216,16 @@ function activateAnnotation(noteId, { scroll = false } = {}) {
   }
 }
 
+function toggleAnnotation(noteId, { scroll = false } = {}) {
+  if (!isBookSpreadLayout() && state.activeAnnotationId === noteId) {
+    state.activeAnnotationId = null;
+    renderText();
+    renderAnnotations();
+    return;
+  }
+  activateAnnotation(noteId, { scroll });
+}
+
 async function deletePrivateNote(noteId) {
   const note = state.annotations.find((item) => item.id === noteId);
   if (!note) return;
@@ -1327,7 +1339,7 @@ $("text").addEventListener("click", (event) => {
     return;
   }
   const mark = event.target.closest("mark[data-note-id]");
-  if (mark) activateAnnotation(mark.dataset.noteId, { scroll: true });
+  if (mark) toggleAnnotation(mark.dataset.noteId, { scroll: true });
 });
 
 document.addEventListener("selectionchange", updateSelectionAction);
