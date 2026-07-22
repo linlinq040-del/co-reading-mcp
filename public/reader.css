@@ -1338,21 +1338,17 @@ h2 {
 }
 
 .ember-inbox-toggle {
-  position: fixed;
-  z-index: 10;
-  right: 28px;
-  bottom: 88px;
+  position: relative;
   display: none;
   align-items: center;
   gap: 7px;
-  min-height: 42px;
+  min-height: 40px;
   border: 1px solid color-mix(in srgb, var(--ember) 34%, white);
   border-radius: 999px;
-  padding: 0 13px;
-  background: color-mix(in srgb, var(--theme-paper, var(--panel-strong)) 90%, transparent);
+  padding: 0 12px;
+  background: color-mix(in srgb, var(--ember) 9%, var(--theme-paper, var(--panel-strong)));
   color: var(--ember, var(--accent));
-  box-shadow: 0 14px 38px rgba(74, 51, 33, 0.14);
-  backdrop-filter: blur(18px);
+  box-shadow: none;
   font-weight: 850;
 }
 

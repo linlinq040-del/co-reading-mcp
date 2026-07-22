@@ -1221,16 +1221,27 @@ async function loadBooks() {
 
 async function selectBook(bookId, { resume = true } = {}) {
   saveReadingPosition({ immediate: true });
+  const [chunks, annotations, progress] = await Promise.all([
+    api(`/api/books/${encodeURIComponent(bookId)}/chunks`),
+    api(`/api/annotations?bookId=${encodeURIComponent(bookId)}`),
+    resume ? api(`/api/progress?bookId=${encodeURIComponent(bookId)}`) : Promise.resolve(null),
+  ]);
   state.bookId = bookId;
   state.chunkId = null;
   state.chunk = null;
   state.activeAnnotationId = null;
   state.replyDrafts = {};
-  state.chunks = await api(`/api/books/${encodeURIComponent(bookId)}/chunks`);
-  state.annotations = await api(`/api/annotations?bookId=${encodeURIComponent(bookId)}`);
+  state.chunks = chunks;
+  state.annotations = annotations;
   const book = state.books.find((item) => item.bookId === bookId);
   $("book-meta").textContent = book?.author || "未知作者";
   $("book-title").textContent = cleanBookTitle(book?.title || bookId);
+  renderBooks();
+  const position = progress?.readingPosition;
+  if (position?.chunkId && state.chunks.some((chunk) => chunk.id === position.chunkId)) {
+    await selectChunk(position.chunkId, { position });
+    return;
+  }
   $("chunk-file").textContent = "No chapter selected";
   $("chunk-title").textContent = "Open a chapter to start reading";
   $("text").innerHTML = `<p class="empty">选择一个章节。长按选中文字，就能给 Ember 留下批注。</p>`;
@@ -1238,17 +1249,8 @@ async function selectBook(bookId, { resume = true } = {}) {
   $("continue-reading").disabled = false;
   document.body.classList.add("has-book");
   document.body.classList.remove("has-chunk");
-  renderBooks();
   renderChunks();
   renderAnnotations();
-  if (resume) {
-    const progress = await api(`/api/progress?bookId=${encodeURIComponent(bookId)}`);
-    const position = progress?.readingPosition;
-    if (position?.chunkId && state.chunks.some((chunk) => chunk.id === position.chunkId)) {
-      await selectChunk(position.chunkId, { position });
-      return;
-    }
-  }
   scrollToPanel(".chapters");
 }
 
