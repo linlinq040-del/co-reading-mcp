@@ -30,6 +30,7 @@ const state = {
   libraryNoteQuery: "",
   libraryNoteBook: "",
   autoMarkingChunks: new Set(),
+  repairingAnnotationAnchors: new Set(),
   chunkOpenedAt: 0,
   chapterHadReadingMotion: false,
 };
@@ -177,6 +178,17 @@ function searchableText(value) {
 }
 
 function findQuoteAnchor(text, note) {
+  const savedAnchorQuote = String(note?.anchorQuote || "");
+  const savedAnchorOffset = Number(note?.anchorOffset);
+  if (
+    savedAnchorQuote &&
+    Number.isInteger(savedAnchorOffset) &&
+    savedAnchorOffset >= 0 &&
+    text.slice(savedAnchorOffset, savedAnchorOffset + savedAnchorQuote.length) === savedAnchorQuote
+  ) {
+    return { start: savedAnchorOffset, end: savedAnchorOffset + savedAnchorQuote.length, quality: "repaired" };
+  }
+
   const quote = String(note?.quote || "");
   if (!quote) return null;
   const requestedOffset = Number(note?.quoteOffset);
@@ -232,6 +244,26 @@ function findQuoteAnchor(text, note) {
     end: source.positions[bestSourceEnd - 1] + 1,
     quality: "fragment",
   };
+}
+
+function persistRepairedAnchor(note, anchor, text) {
+  if (!note?.id || !anchor || state.repairingAnnotationAnchors.has(note.id)) return;
+  const anchorQuote = text.slice(anchor.start, anchor.end);
+  if (!anchorQuote) return;
+  if (note.anchorQuote === anchorQuote && Number(note.anchorOffset) === anchor.start) return;
+
+  state.repairingAnnotationAnchors.add(note.id);
+  api(`/api/annotations/${encodeURIComponent(note.id)}/anchor`, {
+    method: "PATCH",
+    body: { anchorQuote, anchorOffset: anchor.start },
+  })
+    .then((updated) => {
+      Object.assign(note, updated);
+      const libraryCopy = state.libraryAnnotations.find((item) => item.id === note.id);
+      if (libraryCopy) Object.assign(libraryCopy, updated);
+    })
+    .catch((error) => console.warn("Could not persist repaired annotation anchor", error))
+    .finally(() => state.repairingAnnotationAnchors.delete(note.id));
 }
 
 function replyClass(reply, root) {
@@ -484,6 +516,11 @@ function renderText() {
     if (occupied.some((range) => start < range.end && end > range.start)) continue;
     occupied.push({ start, end });
     highlights.push({ start, end, note, shared: sharedIds.has(note.id), anchorQuality: anchor.quality });
+    const storedOffset = Number(note.anchorOffset ?? note.quoteOffset);
+    const storedQuote = String(note.anchorQuote || note.quote || "");
+    if (storedOffset !== start || text.slice(start, end) !== storedQuote) {
+      persistRepairedAnchor(note, anchor, text);
+    }
   }
 
   if (isBookSpreadLayout()) {
