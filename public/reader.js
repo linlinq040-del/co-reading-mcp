@@ -24,6 +24,7 @@ const state = {
   spreadTouchX: null,
   pageTurning: false,
   spreadRanges: [],
+  pendingSpreadRatio: null,
   libraryAnnotations: [],
   booksRenderSignature: "",
   libraryNotesRenderSignature: "",
@@ -137,11 +138,13 @@ function isBookSpreadLayout() {
 function readingPositionPayload() {
   if (!state.bookId || !state.chunkId || !state.chunk) return null;
   if (isBookSpreadLayout()) {
+    const pageStart = state.spreadRanges[state.spreadPage * 2]?.start || 0;
+    const textLength = Math.max(1, state.chunk.text?.length || 0);
     return {
       bookId: state.bookId,
       chunkId: state.chunkId,
       spreadPage: state.spreadPage,
-      scrollRatio: 0,
+      scrollRatio: Math.max(0, Math.min(1, pageStart / textLength)),
       layout: "spread",
     };
   }
@@ -811,6 +814,13 @@ function renderPageSlice(text, range, highlights) {
 function renderMeasuredSpread(text, highlights) {
   state.spreadRanges = measuredPageRanges(text);
   state.spreadPages = Math.max(1, Math.ceil(state.spreadRanges.length / 2));
+  if (state.pendingSpreadRatio !== null) {
+    const targetOffset = Math.floor(text.length * state.pendingSpreadRatio);
+    const matchedLeaf = state.spreadRanges.findIndex((range) => targetOffset < range.end);
+    const leafIndex = matchedLeaf >= 0 ? matchedLeaf : Math.max(0, state.spreadRanges.length - 1);
+    state.spreadPage = Math.floor(leafIndex / 2);
+    state.pendingSpreadRatio = null;
+  }
   state.spreadPage = Math.min(state.spreadPage, state.spreadPages - 1);
   const leftIndex = state.spreadPage * 2;
   const left = state.spreadRanges[leftIndex] || { start: text.length, end: text.length };
@@ -1314,7 +1324,13 @@ async function renameBookOnShelf(bookId) {
 async function selectChunk(chunkId, { position = null } = {}) {
   saveReadingPosition({ immediate: true });
   state.chunkId = chunkId;
-  state.spreadPage = position?.chunkId === chunkId ? Math.max(0, Number(position.spreadPage) || 0) : 0;
+  const hasPosition = position?.chunkId === chunkId;
+  state.spreadPage = hasPosition && position.layout === "spread"
+    ? Math.max(0, Number(position.spreadPage) || 0)
+    : 0;
+  state.pendingSpreadRatio = hasPosition && position.layout !== "spread"
+    ? Math.max(0, Math.min(1, Number(position.scrollRatio) || 0))
+    : null;
   state.activeAnnotationId = null;
   state.chunk = await api(`/api/books/${encodeURIComponent(state.bookId)}/chunks/${encodeURIComponent(chunkId)}`);
   state.chunkOpenedAt = Date.now();
