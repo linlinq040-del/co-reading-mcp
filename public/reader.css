@@ -1360,6 +1360,17 @@ body.has-chunk .ember-inbox-toggle {
   animation: ember-reply-arrived 620ms ease both;
 }
 
+.ember-inbox-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .ember-inbox-count {
   min-width: 20px;
   height: 20px;

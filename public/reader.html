@@ -18,7 +18,7 @@
     <link rel="icon" type="image/png" href="/app-icon.png?v=2" />
     <link rel="apple-touch-icon" sizes="180x180" href="/app-icon.png?v=2" />
     <link rel="preload" as="image" href="/loading-cat-rabbit.webp" type="image/webp" />
-    <link rel="stylesheet" href="/reader.css?v=theme-v8-6-top-replies-direct-resume" />
+    <link rel="stylesheet" href="/reader.css?v=theme-v8-6-reply-icon-2" />
   </head>
   <body>
     <div id="splash" class="splash-screen" role="status" aria-live="polite">
@@ -103,7 +103,10 @@
           <div class="reader-actions">
             <button class="secondary-button" type="button" data-open-theme-picker>◐ 换肤</button>
             <button id="ember-inbox-toggle" class="secondary-button ember-inbox-toggle" type="button" aria-expanded="false" aria-controls="ember-inbox" title="查看 Ember 的最新回复">
-              <span aria-hidden="true">↩</span>
+              <svg class="ember-inbox-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="2.75" y="4.75" width="18.5" height="14.5" rx="4"></rect>
+                <path d="m5.5 8 6.5 4.8L18.5 8"></path>
+              </svg>
               <span class="ember-inbox-label">回信</span>
               <span id="ember-inbox-count" class="ember-inbox-count" hidden>0</span>
             </button>
@@ -144,7 +147,6 @@
             <div>
               <p class="eyebrow">NEW FROM EMBER</p>
               <h2>Ember 的新回信</h2>
-              <small>只收本次打开书房后新到的几条</small>
             </div>
             <button id="ember-inbox-close" class="icon-button" type="button" aria-label="关闭 Ember 回信">×</button>
           </header>
@@ -198,6 +200,6 @@
         </div>
       </section>
     </aside>
-    <script type="module" src="/reader.js?v=theme-v8-6-top-replies-direct-resume"></script>
+    <script type="module" src="/reader.js?v=theme-v8-6-reply-icon-2"></script>
   </body>
 </html>
