@@ -500,8 +500,6 @@ function renderText() {
   const text = state.chunk.text || "";
   const notes = state.annotations.filter((item) => item.chunkId === state.chunkId);
   const sharedIds = sharedNoteIdSet(notes);
-  const highlights = [];
-  const occupied = [];
   const rootNotes = notes
     .filter((item) => !item.parentId && item.quote)
     .sort((a, b) => {
@@ -509,18 +507,26 @@ function renderText() {
       const right = Number.isInteger(b.quoteOffset) ? b.quoteOffset : text.indexOf(b.quote);
       return left - right;
     });
+  const candidates = [];
   for (const note of rootNotes) {
     const anchor = findQuoteAnchor(text, note);
     if (!anchor) continue;
     const { start, end } = anchor;
-    if (occupied.some((range) => start < range.end && end > range.start)) continue;
-    occupied.push({ start, end });
-    highlights.push({ start, end, note, shared: sharedIds.has(note.id), anchorQuality: anchor.quality });
+    candidates.push({ start, end, note, shared: sharedIds.has(note.id), anchorQuality: anchor.quality });
     const storedOffset = Number(note.anchorOffset ?? note.quoteOffset);
     const storedQuote = String(note.anchorQuote || note.quote || "");
     if (storedOffset !== start || text.slice(start, end) !== storedQuote) {
       persistRepairedAnchor(note, anchor, text);
     }
+  }
+
+  candidates.sort((a, b) => a.start - b.start || b.end - a.end || String(a.note.id).localeCompare(String(b.note.id)));
+  const highlights = [];
+  const occupied = [];
+  for (const candidate of candidates) {
+    if (occupied.some((range) => candidate.start < range.end && candidate.end > range.start)) continue;
+    occupied.push({ start: candidate.start, end: candidate.end });
+    highlights.push(candidate);
   }
 
   if (isBookSpreadLayout()) {
