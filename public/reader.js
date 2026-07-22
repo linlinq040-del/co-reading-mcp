@@ -37,6 +37,16 @@ const state = {
 const $ = (id) => document.getElementById(id);
 const splashStartedAt = performance.now();
 const authTokenKey = "co-reading-auth-token";
+const themeStorageKey = "co-reading-theme";
+const themeColors = {
+  blackcat: "#17161d",
+  rabbit: "#f3e9dc",
+  duo: "#e8e0eb",
+  forest: "#dfe5d7",
+  berry: "#f8dfe5",
+  ocean: "#dce8e2",
+  bookshop: "#bba78c",
+};
 const urlToken = new URLSearchParams(location.search).get("token");
 if (urlToken) {
   localStorage.setItem(authTokenKey, urlToken);
@@ -56,6 +66,26 @@ async function api(path, options = {}) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || response.statusText);
   return data;
+}
+
+function applyTheme(theme, { persist = true } = {}) {
+  if (!Object.prototype.hasOwnProperty.call(themeColors, theme)) return;
+  document.documentElement.dataset.theme = theme;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColors[theme]);
+  document.querySelectorAll("[data-theme-choice]").forEach((button) => {
+    const active = button.dataset.themeChoice === theme;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  if (persist) localStorage.setItem(themeStorageKey, theme);
+}
+
+function setThemePicker(open) {
+  const picker = $("theme-picker");
+  if (!picker) return;
+  picker.hidden = !open;
+  document.body.classList.toggle("theme-picker-open", open);
+  if (open) requestAnimationFrame(() => picker.querySelector(".theme-option.active, .theme-option")?.focus());
 }
 
 function escapeHtml(value) {
@@ -1454,6 +1484,23 @@ $("import-file").addEventListener("change", async (event) => {
   }
 });
 
+document.querySelectorAll("[data-open-theme-picker]").forEach((button) => {
+  button.addEventListener("click", () => setThemePicker(true));
+});
+document.querySelectorAll("[data-close-theme-picker]").forEach((button) => {
+  button.addEventListener("click", () => setThemePicker(false));
+});
+$("theme-picker")?.addEventListener("click", (event) => {
+  const choice = event.target.closest("[data-theme-choice]");
+  if (!choice) return;
+  applyTheme(choice.dataset.themeChoice);
+  setThemePicker(false);
+  showToast("书房已经换好新衣服了");
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !$("theme-picker")?.hidden) setThemePicker(false);
+});
+
 function showError(error) {
   $("status").textContent = error.message || String(error);
 }
@@ -1468,6 +1515,7 @@ function dismissSplash() {
   }, wait);
 }
 
+applyTheme(document.documentElement.dataset.theme || "rabbit", { persist: false });
 loadBooks().catch(showError).finally(dismissSplash);
 setTimeout(dismissSplash, 8000);
 setInterval(() => {

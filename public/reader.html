@@ -5,10 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f6f0e6" />
     <title>共读书房</title>
+    <script>
+      (() => {
+        const allowed = new Set(["blackcat", "rabbit", "duo", "forest", "berry", "ocean", "bookshop"]);
+        let saved = null;
+        try {
+          saved = localStorage.getItem("co-reading-theme");
+        } catch {}
+        document.documentElement.dataset.theme = allowed.has(saved) ? saved : "rabbit";
+      })();
+    </script>
     <link rel="icon" type="image/png" href="/app-icon.png?v=2" />
     <link rel="apple-touch-icon" sizes="180x180" href="/app-icon.png?v=2" />
     <link rel="preload" as="image" href="/loading-cat-rabbit.webp" type="image/webp" />
-    <link rel="stylesheet" href="/reader.css?v=ipad-pages-14" />
+    <link rel="stylesheet" href="/reader.css?v=theme-v8-1" />
   </head>
   <body>
     <div id="splash" class="splash-screen" role="status" aria-live="polite">
@@ -33,6 +43,7 @@
             <p class="welcome-note">把喜欢的句子，留在同一页里。</p>
           </div>
           <div class="topbar-actions">
+            <button class="icon-button" type="button" data-open-theme-picker title="一键换肤">◐</button>
             <button id="import-book" class="icon-button" title="导入 EPUB、TXT 或 Markdown">＋</button>
             <button id="refresh" class="icon-button" title="刷新书架">↻</button>
           </div>
@@ -64,6 +75,7 @@
               <select id="library-note-book-filter" class="library-note-book-filter" aria-label="按书筛选">
                 <option value="">全部书籍</option>
               </select>
+              <button class="library-theme-button" type="button" data-open-theme-picker>◐ 换肤</button>
             </div>
           </header>
           <div id="library-notes-list" class="library-notes-list"></div>
@@ -89,6 +101,7 @@
             <h2 id="chunk-title">翻开一章，开始共读</h2>
           </div>
           <div class="reader-actions">
+            <button class="secondary-button" type="button" data-open-theme-picker>◐ 换肤</button>
             <button id="show-card" class="secondary-button" disabled>书签</button>
             <button id="continue-reading" class="secondary-button" disabled>继续阅读</button>
             <button id="mark-read" class="secondary-button" disabled>读完本章</button>
@@ -147,6 +160,27 @@
         </aside>
       </section>
     </main>
-    <script type="module" src="/reader.js?v=ipad-pages-14"></script>
+    <aside id="theme-picker" class="theme-picker" hidden aria-label="选择共读书房主题">
+      <button class="theme-picker-backdrop" type="button" data-close-theme-picker aria-label="关闭换肤面板"></button>
+      <section class="theme-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="theme-picker-title">
+        <header class="theme-picker-head">
+          <div>
+            <p class="eyebrow">ONE-TAP SKIN</p>
+            <h2 id="theme-picker-title">给书房换一套衣服</h2>
+          </div>
+          <button class="icon-button" type="button" data-close-theme-picker aria-label="关闭">×</button>
+        </header>
+        <div class="theme-options">
+          <button class="theme-option" type="button" data-theme-choice="blackcat"><span class="theme-preview blackcat-preview"><i></i><i></i><i></i></span><span><strong>🐈‍⬛ 午夜黑猫</strong><small>月下秘密书房</small></span><b>✓</b></button>
+          <button class="theme-option" type="button" data-theme-choice="rabbit"><span class="theme-preview rabbit-preview"><i></i><i></i><i></i></span><span><strong>🐇 奶油月兔</strong><small>软绵纸张花园</small></span><b>✓</b></button>
+          <button class="theme-option" type="button" data-theme-choice="duo"><span class="theme-preview duo-preview"><i></i><i></i><i></i></span><span><strong>🐈‍⬛🐇 猫兔相拥</strong><small>两个人的暮色</small></span><b>✓</b></button>
+          <button class="theme-option" type="button" data-theme-choice="forest"><span class="theme-preview forest-preview"><i></i><i></i><i></i></span><span><strong>🌿 森林邮局</strong><small>压花与绿色邮戳</small></span><b>✓</b></button>
+          <button class="theme-option" type="button" data-theme-choice="berry"><span class="theme-preview berry-preview"><i></i><i></i><i></i></span><span><strong>🍓 草莓手账</strong><small>贴纸拼贴日记</small></span><b>✓</b></button>
+          <button class="theme-option" type="button" data-theme-choice="ocean"><span class="theme-preview ocean-preview"><i></i><i></i><i></i></span><span><strong>🍵 青瓷茶室</strong><small>宣纸与温润瓷色</small></span><b>✓</b></button>
+          <button class="theme-option" type="button" data-theme-choice="bookshop"><span class="theme-preview bookshop-preview"><i></i><i></i><i></i></span><span><strong>🕯️ 旧书店</strong><small>活字与蜡封信笺</small></span><b>✓</b></button>
+        </div>
+      </section>
+    </aside>
+    <script type="module" src="/reader.js?v=theme-v8-1"></script>
   </body>
 </html>

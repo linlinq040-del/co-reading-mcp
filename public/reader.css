@@ -2056,3 +2056,423 @@ button:disabled {
     background: rgba(255, 255, 255, 0.07);
   }
 }
+
+/* --------------------------------------------------------------------------
+   V8 one-tap theme system. Theme CSS may change materials and component
+   language, but it deliberately does not own layout coordinates or paging.
+   -------------------------------------------------------------------------- */
+
+html[data-theme="blackcat"] {
+  color-scheme: dark;
+  --bg: #16151c;
+  --panel: rgba(37, 35, 43, 0.78);
+  --panel-strong: #201f27;
+  --text: #f4eee8;
+  --muted: #aaa2ad;
+  --line: rgba(255, 255, 255, 0.1);
+  --accent: #caa8ff;
+  --accent-soft: rgba(181, 140, 255, 0.17);
+  --mine: #b58cff;
+  --ember: #86d8ff;
+  --theme-bg-a: #211f28;
+  --theme-bg-b: #121117;
+  --theme-paper: #25232b;
+  --theme-paper-2: #201f27;
+  --primary-gradient: linear-gradient(135deg, #b58cff, #725d9c);
+  --theme-shadow: 0 28px 80px rgba(0, 0, 0, 0.36);
+}
+
+html[data-theme="rabbit"] {
+  color-scheme: light;
+  --bg: #f3e9dc;
+  --panel: rgba(255, 250, 241, 0.76);
+  --panel-strong: #fffaf1;
+  --text: #4e3d39;
+  --muted: #9b8077;
+  --line: #ead7c7;
+  --accent: #d8988d;
+  --accent-soft: rgba(216, 152, 141, 0.16);
+  --mine: #ff9a62;
+  --ember: #89b96b;
+  --theme-bg-a: #f8f0e5;
+  --theme-bg-b: #ead7c5;
+  --theme-paper: #fffaf1;
+  --theme-paper-2: #fbf2e5;
+  --primary-gradient: linear-gradient(135deg, #e0a093, #bd796f);
+  --theme-shadow: 0 28px 70px rgba(113, 78, 56, 0.15);
+}
+
+html[data-theme="duo"] {
+  color-scheme: light;
+  --bg: #e8e0eb;
+  --panel: rgba(255, 249, 243, 0.77);
+  --panel-strong: #fff9f3;
+  --text: #493f4c;
+  --muted: #8d7c8e;
+  --line: #e3d3df;
+  --accent: #9f709d;
+  --accent-soft: rgba(159, 112, 157, 0.16);
+  --mine: #7767c7;
+  --ember: #f08ba4;
+  --theme-bg-a: #eee7f0;
+  --theme-bg-b: #d9cadf;
+  --theme-paper: #fff9f3;
+  --theme-paper-2: #f8f0ef;
+  --primary-gradient: linear-gradient(135deg, #7767c7, #f08ba4);
+  --theme-shadow: 0 30px 74px rgba(82, 51, 84, 0.18);
+}
+
+html[data-theme="forest"] {
+  color-scheme: light;
+  --bg: #dfe5d7;
+  --panel: rgba(247, 244, 233, 0.78);
+  --panel-strong: #f7f4e9;
+  --text: #344338;
+  --muted: #718071;
+  --line: #d4dac9;
+  --accent: #6e8f6a;
+  --accent-soft: rgba(110, 143, 106, 0.16);
+  --mine: #e3b23c;
+  --ember: #5e8e59;
+  --theme-bg-a: #e9eddf;
+  --theme-bg-b: #c8d3bd;
+  --theme-paper: #f7f4e9;
+  --theme-paper-2: #f1efe2;
+  --primary-gradient: linear-gradient(135deg, #8daa80, #496b4c);
+  --theme-shadow: 0 28px 70px rgba(46, 65, 44, 0.18);
+}
+
+html[data-theme="berry"] {
+  color-scheme: light;
+  --bg: #f8dfe5;
+  --panel: rgba(255, 250, 248, 0.8);
+  --panel-strong: #fffaf8;
+  --text: #573745;
+  --muted: #a16f80;
+  --line: #f0cbd5;
+  --accent: #e25e83;
+  --accent-soft: rgba(226, 94, 131, 0.16);
+  --mine: #f55071;
+  --ember: #596fda;
+  --theme-bg-a: #fff0f3;
+  --theme-bg-b: #efc7d5;
+  --theme-paper: #fffaf8;
+  --theme-paper-2: #fff2f0;
+  --primary-gradient: linear-gradient(135deg, #ff809c, #d94370);
+  --theme-shadow: 0 25px 65px rgba(174, 76, 112, 0.18);
+}
+
+html[data-theme="ocean"] {
+  color-scheme: light;
+  --bg: #dce8e2;
+  --panel: rgba(246, 247, 241, 0.8);
+  --panel-strong: #f6f7f1;
+  --text: #344843;
+  --muted: #788b85;
+  --line: #cfddd6;
+  --accent: #668e83;
+  --accent-soft: rgba(102, 142, 131, 0.16);
+  --mine: #c96d58;
+  --ember: #4f8296;
+  --theme-bg-a: #edf3ee;
+  --theme-bg-b: #cadbd4;
+  --theme-paper: #f6f7f1;
+  --theme-paper-2: #edf2ec;
+  --primary-gradient: linear-gradient(135deg, #88aba0, #557d72);
+  --theme-shadow: 0 26px 65px rgba(52, 82, 72, 0.15);
+}
+
+html[data-theme="bookshop"] {
+  color-scheme: light;
+  --bg: #bba78c;
+  --panel: rgba(238, 225, 197, 0.84);
+  --panel-strong: #eee1c5;
+  --text: #34281d;
+  --muted: #786552;
+  --line: #cdbb99;
+  --accent: #8d3f32;
+  --accent-soft: rgba(141, 63, 50, 0.15);
+  --mine: #9e493d;
+  --ember: #3f7088;
+  --theme-bg-a: #d7c7aa;
+  --theme-bg-b: #9f886d;
+  --theme-paper: #eee1c5;
+  --theme-paper-2: #e8d8b8;
+  --primary-gradient: linear-gradient(135deg, #a85443, #773126);
+  --theme-shadow: 0 28px 75px rgba(55, 35, 21, 0.28);
+}
+
+html[data-theme] body {
+  background:
+    radial-gradient(circle at 8% 3%, color-mix(in srgb, var(--theme-paper) 72%, transparent), transparent 24rem),
+    linear-gradient(135deg, var(--theme-bg-a), var(--bg) 48%, var(--theme-bg-b));
+  transition: background 320ms ease, color 220ms ease;
+}
+
+html[data-theme] .sidebar,
+html[data-theme] .chapters {
+  background: color-mix(in srgb, var(--theme-paper) 62%, transparent);
+}
+
+html[data-theme] .reader-head {
+  background-color: color-mix(in srgb, var(--bg) 88%, transparent);
+}
+
+html[data-theme] .book-page,
+html[data-theme] .text {
+  background-color: color-mix(in srgb, var(--theme-paper) 90%, transparent);
+}
+
+html[data-theme] .book-page-right {
+  background-color: color-mix(in srgb, var(--theme-paper-2) 92%, transparent);
+}
+
+html[data-theme] .primary-button {
+  background: var(--primary-gradient);
+}
+
+html[data-theme] .secondary-button,
+html[data-theme] .icon-button,
+html[data-theme] .tools-close {
+  background: color-mix(in srgb, var(--accent) 11%, transparent);
+  color: var(--text);
+}
+
+html[data-theme] .note-form,
+html[data-theme] .submitbar,
+html[data-theme] .card-panel,
+html[data-theme] .toast {
+  border-color: color-mix(in srgb, var(--theme-paper) 74%, white);
+  background: color-mix(in srgb, var(--theme-paper) 88%, transparent);
+  box-shadow: var(--theme-shadow);
+}
+
+html[data-theme] textarea,
+html[data-theme] .library-note-search,
+html[data-theme] .library-note-book-filter {
+  background: color-mix(in srgb, var(--theme-paper) 90%, white);
+}
+
+html[data-theme] .tools-toggle {
+  border-color: color-mix(in srgb, var(--theme-paper) 76%, white);
+  background: color-mix(in srgb, var(--theme-paper) 90%, transparent);
+  color: var(--accent);
+  box-shadow: var(--theme-shadow);
+}
+
+html[data-theme] .text mark.mine {
+  background: color-mix(in srgb, var(--mine) 32%, transparent);
+  box-shadow: inset 0 -2px var(--mine);
+}
+
+html[data-theme] .text mark.ember {
+  background: color-mix(in srgb, var(--ember) 30%, transparent);
+  box-shadow: inset 0 -2px var(--ember);
+}
+
+html[data-theme] .text mark.shared {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--mine) 30%, transparent), color-mix(in srgb, var(--ember) 30%, transparent));
+  box-shadow: inset 0 -2px color-mix(in srgb, var(--accent) 72%, transparent);
+}
+
+html[data-theme] .mine-note,
+html[data-theme] .passage-voice.my-voice {
+  border-left-color: var(--mine);
+}
+
+html[data-theme] .inline-note.mine-note,
+html[data-theme] .note-card.mine-note {
+  background: color-mix(in srgb, var(--theme-paper) 86%, var(--mine) 14%);
+}
+
+html[data-theme] .ember-note,
+html[data-theme] .passage-voice.ember-voice {
+  border-left-color: var(--ember);
+}
+
+html[data-theme] .inline-note.ember-note,
+html[data-theme] .note-card.ember-note {
+  background: color-mix(in srgb, var(--theme-paper) 86%, var(--ember) 14%);
+}
+
+html[data-theme] .passage-voice.my-voice {
+  background: color-mix(in srgb, var(--mine) 13%, var(--theme-paper));
+}
+
+html[data-theme] .passage-voice.ember-voice {
+  background: color-mix(in srgb, var(--ember) 13%, var(--theme-paper));
+}
+
+html[data-theme] .passage-speaker {
+  color: var(--mine);
+}
+
+html[data-theme] .ember-voice .passage-speaker {
+  color: var(--ember);
+}
+
+html[data-theme] .annotation-home-entry {
+  border-color: var(--line);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--theme-paper) 92%, transparent), color-mix(in srgb, var(--accent) 9%, transparent));
+}
+
+html[data-theme] .library-notes-head {
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+}
+
+html[data-theme] .library-note-book,
+html[data-theme] .library-annotation-card {
+  background: color-mix(in srgb, var(--theme-paper) 82%, transparent);
+}
+
+html[data-theme] .spread-annotation-popover {
+  border-color: color-mix(in srgb, var(--theme-paper) 70%, white);
+  background: color-mix(in srgb, var(--theme-paper) 96%, transparent);
+  color: var(--text);
+  box-shadow: var(--theme-shadow);
+}
+
+/* Midnight black cat: sharp night letters, star-index annotation room. */
+html[data-theme="blackcat"] body::before { opacity: 0.5; }
+html[data-theme="blackcat"] .annotation-home-entry { border-left: 5px solid var(--accent); border-radius: 3px 18px 18px 3px; }
+html[data-theme="blackcat"] .annotation-home-icon { border-radius: 45% 55% 40% 60%; }
+html[data-theme="blackcat"] .inline-note,
+html[data-theme="blackcat"] .note-card,
+html[data-theme="blackcat"] .spread-annotation-popover { border-radius: 4px 18px 18px 4px; background: #18171e; }
+html[data-theme="blackcat"] .spread-annotation-popover::before { content: "CAT'S SECRET"; display: block; margin: 0 42px 12px 0; color: var(--accent); font-size: 9px; font-weight: 900; letter-spacing: 0.18em; }
+html[data-theme="blackcat"] .library-notes-list { position: relative; padding-left: 24px; }
+html[data-theme="blackcat"] .library-notes-list::before { position: absolute; top: 5px; bottom: 5px; left: 7px; width: 1px; background: linear-gradient(var(--mine), var(--ember)); content: ""; }
+html[data-theme="blackcat"] .library-note-book { border-left: 4px solid var(--accent); border-radius: 3px 18px 18px 3px; }
+html[data-theme="blackcat"] .library-note-mark { border-radius: 42% 58% 46% 54%; background: linear-gradient(145deg, #b58cff, #4c4368); }
+html[data-theme="blackcat"] .submitbar { border-left: 5px solid var(--accent); border-radius: 8px 28px 28px 8px; }
+html[data-theme="blackcat"] .tools-toggle { background: linear-gradient(145deg, #bea1f4, #725d9c); color: #17131d; }
+html[data-theme="blackcat"] .text mark.mine { border-radius: 0; background: linear-gradient(transparent 70%, color-mix(in srgb, var(--mine) 38%, transparent) 70%); }
+html[data-theme="blackcat"] .text mark.ember { border-radius: 0; background: linear-gradient(transparent 70%, color-mix(in srgb, var(--ember) 35%, transparent) 70%); }
+
+/* Cream rabbit: cloud-soft stationery, stitches and rounded albums. */
+html[data-theme="rabbit"] .annotation-home-entry,
+html[data-theme="rabbit"] .library-note-book,
+html[data-theme="rabbit"] .library-annotation-card,
+html[data-theme="rabbit"] .inline-note,
+html[data-theme="rabbit"] .note-card,
+html[data-theme="rabbit"] .spread-annotation-popover { border: 2px dashed #dec1b5; border-radius: 30px; }
+html[data-theme="rabbit"] .library-note-mark { border-radius: 50%; background: linear-gradient(145deg, #efc7b9, #d98e80); }
+html[data-theme="rabbit"] .library-book-annotations { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html[data-theme="rabbit"] .spread-annotation-popover::before { content: "♡ 月兔便签"; display: inline-block; margin-bottom: 10px; padding: 5px 11px; border-radius: 999px; color: #9e6966; background: #f5d8d0; font-size: 10px; font-weight: 850; }
+html[data-theme="rabbit"] .submitbar { border: 2px dashed #dec1b5; border-radius: 32px; }
+html[data-theme="rabbit"] .tools-toggle::before { position: absolute; top: -14px; width: 24px; height: 24px; border: 6px solid #efd4cd; border-bottom: 0; border-radius: 50% 50% 0 0; content: ""; }
+html[data-theme="rabbit"] .text mark { padding-inline: 0.18em; border-radius: 999px; }
+html[data-theme="rabbit"] .text mark.mine { border: 2px dotted color-mix(in srgb, var(--mine) 65%, transparent); box-shadow: none; }
+html[data-theme="rabbit"] .text mark.ember { border: 2px dotted color-mix(in srgb, var(--ember) 65%, transparent); box-shadow: none; }
+
+/* Cat + rabbit: two identity rails on neutral shared paper. */
+html[data-theme="duo"] .annotation-home-entry { border-left: 5px solid var(--mine); border-right: 5px solid var(--ember); }
+html[data-theme="duo"] .inline-note,
+html[data-theme="duo"] .note-card,
+html[data-theme="duo"] .spread-annotation-popover,
+html[data-theme="duo"] .library-annotation-card { border-left: 5px solid var(--mine); border-right: 5px solid var(--ember); border-radius: 26px 8px 26px 8px; background: var(--theme-paper); }
+html[data-theme="duo"] .library-note-mark { background: linear-gradient(135deg, var(--mine) 0 50%, var(--ember) 50%); }
+html[data-theme="duo"] .passage-voices { grid-template-columns: 1fr 1fr; }
+html[data-theme="duo"] .passage-voice { margin: 0; border-radius: 14px 4px 14px 4px; }
+html[data-theme="duo"] .submitbar { border-left: 5px solid var(--mine); border-right: 5px solid var(--ember); background: var(--theme-paper); }
+html[data-theme="duo"] .tools-toggle { background: linear-gradient(135deg, var(--mine) 0 50%, var(--ember) 50%); color: white; }
+html[data-theme="duo"] .text mark.mine { border-radius: 8px 2px 8px 2px; box-shadow: inset 3px 0 var(--mine); }
+html[data-theme="duo"] .text mark.ember { border-radius: 2px 8px 2px 8px; box-shadow: inset -3px 0 var(--ember); }
+
+/* Forest post office: pressed-leaf highlights and postcard notes. */
+html[data-theme="forest"] .annotation-home-entry,
+html[data-theme="forest"] .library-note-book,
+html[data-theme="forest"] .library-annotation-card,
+html[data-theme="forest"] .inline-note,
+html[data-theme="forest"] .note-card,
+html[data-theme="forest"] .spread-annotation-popover { border-radius: 2px; box-shadow: 7px 8px 0 rgba(72, 98, 67, 0.11); }
+html[data-theme="forest"] .library-note-book:nth-child(even) { transform: rotate(0.35deg); }
+html[data-theme="forest"] .library-note-mark { border-radius: 50% 6px 50% 6px; background: linear-gradient(145deg, #91ad82, #547a55); }
+html[data-theme="forest"] .spread-annotation-popover::before { content: "LEAF POST · 21"; float: right; width: 64px; margin: 0 0 12px 14px; border: 3px double var(--accent); padding: 8px 5px; color: var(--accent); font-size: 8px; text-align: center; transform: rotate(2deg); }
+html[data-theme="forest"] .submitbar { border-radius: 2px; box-shadow: 7px 7px 0 rgba(72, 98, 67, 0.12); }
+html[data-theme="forest"] .text mark.mine { border-radius: 50% 8px 50% 8px; background: linear-gradient(165deg, transparent 15%, color-mix(in srgb, var(--mine) 44%, transparent) 16% 82%, transparent 83%); box-shadow: none; }
+html[data-theme="forest"] .text mark.ember { border-radius: 8px 50% 8px 50%; background: linear-gradient(165deg, transparent 15%, color-mix(in srgb, var(--ember) 42%, transparent) 16% 82%, transparent 83%); box-shadow: none; }
+
+/* Strawberry scrapbook: milk-paper cards, tape and offset stickers. */
+html[data-theme="berry"] .annotation-home-entry,
+html[data-theme="berry"] .library-note-book,
+html[data-theme="berry"] .library-annotation-card,
+html[data-theme="berry"] .inline-note,
+html[data-theme="berry"] .note-card,
+html[data-theme="berry"] .spread-annotation-popover { border: 3px solid #fff; border-radius: 20px 6px 20px 6px; box-shadow: 6px 7px 0 rgba(219, 93, 127, 0.13); }
+html[data-theme="berry"] .library-note-book:nth-child(even) { transform: rotate(0.25deg); }
+html[data-theme="berry"] .library-note-mark { border: 3px solid #fff; border-radius: 10px 4px 10px 4px; background: linear-gradient(145deg, #f67392, #cf456b); box-shadow: 5px 6px 0 #f2ced8; }
+html[data-theme="berry"] .library-annotation-card { background: #fffaf7; }
+html[data-theme="berry"] .library-annotation-card:nth-child(even) { background: #f1f2ff; transform: rotate(0.35deg); }
+html[data-theme="berry"] .spread-annotation-popover::before { position: absolute; top: -8px; left: 50%; width: 92px; height: 16px; background: rgba(255, 193, 87, 0.54); content: ""; transform: translateX(-50%) rotate(2deg); }
+html[data-theme="berry"] .submitbar { border: 3px solid #fff; box-shadow: 7px 8px 0 rgba(225, 82, 123, 0.15); }
+html[data-theme="berry"] .tools-toggle { border: 3px solid #fff; background: var(--primary-gradient); color: white; }
+html[data-theme="berry"] .text mark { border-radius: 3px; box-shadow: 3px 3px 0 rgba(255, 255, 255, 0.75); }
+
+/* Celadon tea room: rice paper, porcelain blue and cinnabar seal. */
+html[data-theme="ocean"] .annotation-home-entry,
+html[data-theme="ocean"] .library-note-book,
+html[data-theme="ocean"] .library-annotation-card,
+html[data-theme="ocean"] .inline-note,
+html[data-theme="ocean"] .note-card,
+html[data-theme="ocean"] .spread-annotation-popover { border-radius: 3px 16px 3px 16px; border-bottom: 3px solid #789d92; background: #f5f6ef; box-shadow: 5px 6px 0 rgba(93, 130, 117, 0.08); }
+html[data-theme="ocean"] .library-note-mark { border-radius: 50%; background: radial-gradient(circle at 34% 27%, #f4f8f2, #a9c4bb 48%, #70998e); color: #31554c; }
+html[data-theme="ocean"] .spread-annotation-popover::before { content: "共读"; float: right; display: grid; place-items: center; width: 32px; height: 32px; margin: 0 30px 10px 12px; border: 2px solid #b96050; color: #b96050; font-family: "Songti SC", serif; font-size: 9px; transform: rotate(3deg); }
+html[data-theme="ocean"] .submitbar { border-radius: 4px 18px 4px 18px; border-bottom: 4px solid #789d92; background: #f5f6ef; }
+html[data-theme="ocean"] .tools-toggle { background: radial-gradient(circle at 34% 27%, #f4f8f2, #a9c4bb 45%, #70998e); color: #31554c; }
+html[data-theme="ocean"] .text mark.mine { border-radius: 50% 3px 45% 4px; background: linear-gradient(172deg, transparent 18%, color-mix(in srgb, var(--mine) 29%, transparent) 19% 82%, transparent 83%); box-shadow: none; }
+html[data-theme="ocean"] .text mark.ember { border-radius: 3px 48% 4px 44%; background: linear-gradient(172deg, transparent 18%, color-mix(in srgb, var(--ember) 28%, transparent) 19% 82%, transparent 83%); box-shadow: none; }
+
+/* Old bookshop: type, index drawers and wax seals. */
+html[data-theme="bookshop"] .annotation-home-entry,
+html[data-theme="bookshop"] .library-note-book,
+html[data-theme="bookshop"] .library-annotation-card,
+html[data-theme="bookshop"] .inline-note,
+html[data-theme="bookshop"] .note-card,
+html[data-theme="bookshop"] .spread-annotation-popover { border: 4px double #9f8867; border-radius: 0; background: #e8d5af; box-shadow: 8px 10px 0 rgba(67, 43, 25, 0.16); }
+html[data-theme="bookshop"] .library-notes-head { border: 3px double #a28a67; padding: 14px; background: #ddc9a3; }
+html[data-theme="bookshop"] .library-note-mark { border: 3px double #765e45; border-radius: 0; background: #b4976f; }
+html[data-theme="bookshop"] .library-annotation-card::after { display: block; width: 68px; height: 14px; margin: 4px auto -25px; border: 3px double #66503c; background: #b49a75; content: ""; }
+html[data-theme="bookshop"] .spread-annotation-popover::before { content: "ANNOTATION · CARD"; display: block; margin-bottom: 12px; color: #80674f; font-size: 9px; font-weight: 900; letter-spacing: 0.16em; }
+html[data-theme="bookshop"] .submitbar { border: 3px double #a8926e; border-radius: 0; background: #e4d1aa; }
+html[data-theme="bookshop"] .tools-toggle { background: radial-gradient(circle, #a85443 0 42%, #773126 43% 100%); color: #f3dfba; }
+html[data-theme="bookshop"] .text mark.mine { border-radius: 0; background: repeating-linear-gradient(175deg, transparent 0 7px, color-mix(in srgb, var(--mine) 34%, transparent) 7px 9px); }
+html[data-theme="bookshop"] .text mark.ember { border-radius: 0; background: repeating-linear-gradient(175deg, transparent 0 7px, color-mix(in srgb, var(--ember) 34%, transparent) 7px 9px); }
+html[data-theme="bookshop"] .text mark.shared { background: repeating-linear-gradient(175deg, transparent 0 5px, color-mix(in srgb, var(--mine) 32%, transparent) 5px 7px, color-mix(in srgb, var(--ember) 32%, transparent) 7px 9px); }
+
+/* Theme picker */
+body.theme-picker-open { overflow: hidden; }
+.theme-picker[hidden] { display: none; }
+.theme-picker { position: fixed; z-index: 90; inset: 0; display: grid; place-items: center; padding: max(20px, env(safe-area-inset-top)) 18px max(20px, env(safe-area-inset-bottom)); }
+.theme-picker-backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(24, 20, 18, 0.36); backdrop-filter: blur(10px); }
+.theme-picker-sheet { position: relative; width: min(820px, 100%); max-height: min(760px, calc(100svh - 40px)); overflow: auto; border: 1px solid var(--line); border-radius: 30px; padding: 24px; background: color-mix(in srgb, var(--theme-paper) 96%, transparent); color: var(--text); box-shadow: 0 30px 100px rgba(34, 25, 20, 0.26); }
+.theme-picker-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.theme-picker-head h2 { font-size: 26px; }
+.theme-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.theme-option { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; align-items: center; gap: 13px; min-width: 0; border: 1px solid var(--line); border-radius: 17px; padding: 11px; background: color-mix(in srgb, var(--theme-paper-2) 78%, transparent); color: var(--text); text-align: left; }
+.theme-option.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.theme-option strong,.theme-option small { display: block; }
+.theme-option strong { font-size: 14px; }
+.theme-option small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.theme-option>b { color: var(--accent); opacity: 0; }
+.theme-option.active>b { opacity: 1; }
+.theme-preview { display: flex; overflow: hidden; width: 54px; height: 40px; border: 2px solid color-mix(in srgb, var(--text) 12%, transparent); border-radius: 12px; }
+.theme-preview i { flex: 1; }
+.blackcat-preview i:nth-child(1){background:#17161d}.blackcat-preview i:nth-child(2){background:#b58cff}.blackcat-preview i:nth-child(3){background:#86d8ff}
+.rabbit-preview i:nth-child(1){background:#fffaf1}.rabbit-preview i:nth-child(2){background:#ff9a62}.rabbit-preview i:nth-child(3){background:#89b96b}
+.duo-preview i:nth-child(1){background:#fff9f3}.duo-preview i:nth-child(2){background:#7767c7}.duo-preview i:nth-child(3){background:#f08ba4}
+.forest-preview i:nth-child(1){background:#f7f4e9}.forest-preview i:nth-child(2){background:#e3b23c}.forest-preview i:nth-child(3){background:#5e8e59}
+.berry-preview i:nth-child(1){background:#fffaf8}.berry-preview i:nth-child(2){background:#f55071}.berry-preview i:nth-child(3){background:#596fda}
+.ocean-preview i:nth-child(1){background:#f6f7f1}.ocean-preview i:nth-child(2){background:#c96d58}.ocean-preview i:nth-child(3){background:#4f8296}
+.bookshop-preview i:nth-child(1){background:#eee1c5}.bookshop-preview i:nth-child(2){background:#9e493d}.bookshop-preview i:nth-child(3){background:#3f7088}
+.library-theme-button { min-height: 44px; border: 1px solid var(--line); border-radius: 14px; padding: 0 13px; background: var(--accent-soft); color: var(--accent); font-weight: 800; }
+.library-note-controls { grid-template-columns: minmax(0, 1fr) minmax(140px, 0.45fr) auto; }
+
+@media (max-width: 980px) {
+  .theme-picker { align-items: end; padding-inline: 0; padding-bottom: 0; }
+  .theme-picker-sheet { width: 100%; max-height: min(82svh, 760px); border-radius: 28px 28px 0 0; padding: 21px 18px calc(24px + env(safe-area-inset-bottom)); }
+  .theme-options { grid-template-columns: 1fr; }
+  .library-note-controls { grid-template-columns: 1fr; }
+  html[data-theme="rabbit"] .library-book-annotations { grid-template-columns: 1fr; }
+  html[data-theme="duo"] .passage-voices { grid-template-columns: 1fr; }
+}
