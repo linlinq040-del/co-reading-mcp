@@ -135,9 +135,20 @@ function validReadIds(manifest, progressEntry = {}) {
 
 function progressSummary(manifest, progressEntry = {}) {
   const readIds = validReadIds(manifest, progressEntry);
+  const savedPosition = progressEntry.readingPosition;
+  const readingPosition = savedPosition && manifest.chunks.some((chunk) => chunk.id === savedPosition.chunkId)
+    ? {
+        chunkId: savedPosition.chunkId,
+        spreadPage: Math.max(0, Number(savedPosition.spreadPage) || 0),
+        scrollRatio: Math.max(0, Math.min(1, Number(savedPosition.scrollRatio) || 0)),
+        layout: savedPosition.layout || "scroll",
+        updatedAt: savedPosition.updatedAt || null,
+      }
+    : null;
   return {
     lastChunkId: manifest.chunks.some((chunk) => chunk.id === progressEntry.lastChunkId) ? progressEntry.lastChunkId : null,
     lastReadAt: progressEntry.lastReadAt || null,
+    readingPosition,
     readChunkIds: Array.from(readIds),
     chunksRead: readIds.size,
     chunkCount: manifest.chunks.length,
@@ -812,6 +823,17 @@ export async function continueReading({ bookId } = {}) {
   const manifest = await resolveContinueBook(bookId);
   const progress = await loadProgress();
   const summary = progressSummary(manifest, progress[manifest.bookId] || {});
+  if (summary.readingPosition) {
+    const chunk = await readChunk(manifest.bookId, summary.readingPosition.chunkId);
+    return {
+      ...chunk,
+      progress: summary,
+      readingPosition: summary.readingPosition,
+      selectedReason: "saved-position",
+      completed: false,
+      message: `Continue ${manifest.title} where you left off.`,
+    };
+  }
   const selection = nextChunkForProgress(manifest, progress[manifest.bookId] || {});
 
   if (!selection.chunk) {
@@ -980,6 +1002,7 @@ export async function markRead(bookId, chunkId) {
     const readIds = validReadIds(manifest, current);
     readIds.add(chunkId);
     progress[bookId] = {
+      ...current,
       lastChunkId: chunkId,
       lastReadAt: new Date().toISOString(),
       readChunkIds: Array.from(readIds),
@@ -1053,6 +1076,36 @@ export async function markRead(bookId, chunkId) {
     }
 
     return result;
+  });
+}
+
+export async function saveReadingPosition(bookId, chunkId, input = {}) {
+  return withWriteLock(async () => {
+    if (!bookId) throw new Error("bookId is required");
+    if (!chunkId) throw new Error("chunkId is required");
+    const manifest = await loadManifest(bookId);
+    if (!manifest.chunks.some((chunk) => chunk.id === chunkId)) {
+      throw new Error(`Unknown chunkId for ${bookId}: ${chunkId}`);
+    }
+
+    const progress = await loadProgress();
+    const current = progress[bookId] || {};
+    const updatedAt = new Date().toISOString();
+    const readingPosition = {
+      chunkId,
+      spreadPage: Math.max(0, Math.floor(Number(input.spreadPage) || 0)),
+      scrollRatio: Math.max(0, Math.min(1, Number(input.scrollRatio) || 0)),
+      layout: input.layout === "spread" ? "spread" : "scroll",
+      updatedAt,
+    };
+    progress[bookId] = {
+      ...current,
+      lastChunkId: chunkId,
+      lastReadAt: updatedAt,
+      readingPosition,
+    };
+    await writeJson(progressPath, progress);
+    return { bookId, ...readingPosition };
   });
 }
 

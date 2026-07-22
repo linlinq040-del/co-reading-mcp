@@ -23,6 +23,7 @@ import {
   renameBook,
   replyToAnnotation,
   searchChunks,
+  saveReadingPosition,
   submitUserNotes,
 } from "./store.js";
 import { importBook } from "./importer.js";
@@ -239,6 +240,11 @@ export async function handleApi(req, res, url, options = {}) {
   if (req.method === "POST" && parts.length === 2 && parts[1] === "mark-read") {
     const body = await readBody(req, { maxBytes });
     return sendJson(res, 200, await markRead(body.bookId, body.chunkId));
+  }
+
+  if (req.method === "POST" && parts.length === 2 && parts[1] === "reading-position") {
+    const body = await readBody(req, { maxBytes });
+    return sendJson(res, 200, await saveReadingPosition(body.bookId, body.chunkId, body));
   }
 
   if (req.method === "POST" && parts.length === 2 && parts[1] === "import") {
