@@ -44,6 +44,7 @@ const state = {
   replyInboxDrafts: {},
   replyInboxSignature: "",
   knownReplyInboxIds: new Set(),
+  seenReplyInboxIds: new Set(),
   replyInboxInitialized: false,
 };
 
@@ -402,9 +403,10 @@ function renderReplyInbox() {
   const button = $("ember-inbox-toggle");
   if (!list || !count || !button) return;
   const items = state.replyInboxItems.slice(0, state.replyInboxVisibleCount);
-  count.textContent = state.replyInboxItems.length > 9 ? "9+" : String(state.replyInboxItems.length);
-  count.hidden = state.replyInboxItems.length === 0;
-  button.classList.toggle("has-new", state.replyInboxItems.length > 0);
+  const unreadCount = state.replyInboxItems.filter(({ reply }) => !state.seenReplyInboxIds.has(reply.id)).length;
+  count.textContent = unreadCount > 9 ? "9+" : String(unreadCount);
+  count.hidden = unreadCount === 0;
+  button.classList.toggle("has-new", unreadCount > 0);
   const signature = JSON.stringify(items.map(({ reply, parent }) => [reply.id, reply.note, reply.createdAt, parent?.id, parent?.note]));
   if (signature === state.replyInboxSignature) return;
   if (document.activeElement?.closest?.(".ember-inbox-reply-form")) return;
@@ -446,6 +448,9 @@ async function refreshReplyInbox({ announce = true } = {}) {
   }
   state.replyInboxAnnotations = annotations;
   state.replyInboxItems = items;
+  if (!$("ember-inbox")?.hidden) {
+    items.forEach(({ reply }) => state.seenReplyInboxIds.add(reply.id));
+  }
   state.knownReplyInboxIds = ids;
   state.replyInboxInitialized = true;
   renderReplyInbox();
@@ -459,6 +464,7 @@ function setReplyInbox(open) {
   button.setAttribute("aria-expanded", String(open));
   document.body.classList.toggle("ember-inbox-open", open);
   if (open) {
+    state.replyInboxItems.forEach(({ reply }) => state.seenReplyInboxIds.add(reply.id));
     state.replyInboxVisibleCount = 5;
     state.replyInboxSignature = "";
     renderReplyInbox();
