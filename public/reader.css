@@ -515,7 +515,40 @@ h2 {
   border-left: 3px solid var(--accent-soft);
   border-radius: 0 12px 12px 0;
   background: rgba(185, 120, 93, 0.055);
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
+}
+
+.passage-quote-wrap {
+  position: relative;
+}
+
+.passage-quote.has-overflow {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0 68%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0 68%, transparent 100%);
+}
+
+.passage-quote-wrap.expanded .passage-quote {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.passage-quote-toggle {
+  display: block;
+  margin: 7px 4px 0 auto;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.passage-quote-toggle[hidden] {
+  display: none;
 }
 
 .passage-voices {

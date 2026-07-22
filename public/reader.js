@@ -29,6 +29,7 @@ const state = {
   libraryNotesRenderSignature: "",
   libraryNoteQuery: "",
   libraryNoteBook: "",
+  expandedLibraryQuotes: new Set(),
   autoMarkingChunks: new Set(),
   repairingAnnotationAnchors: new Set(),
   chunkOpenedAt: 0,
@@ -444,7 +445,7 @@ function renderLibraryNotes() {
         .some((value) => String(value || "").toLocaleLowerCase().includes(query)));
     });
   if (!groups.length) {
-    list.innerHTML = `<p class="library-notes-empty">书房里还没有批注。读到喜欢的句子时，把它留在这里吧。</p>`;
+    list.innerHTML = `<p class="library-notes-empty">手札里还没有页边话。读到喜欢的句子时，把它留在这里吧。</p>`;
     return;
   }
   list.innerHTML = groups
@@ -461,7 +462,10 @@ function renderLibraryNotes() {
         ${passageGroups(bookNotes).filter((passage) => !query || passage.notes.some((note) => [passage.quote, note.note, formatIdentity(note.author), note.chunkId]
           .some((value) => String(value || "").toLocaleLowerCase().includes(query)))).map((passage) => `<article class="library-annotation-card passage-conversation">
           <span class="annotation-index-meta">${escapeHtml(passage.chunkId || "未知章节")} · ${passage.notes.length} 条页边话</span>
-          ${passage.quote ? `<blockquote class="annotation-index-quote passage-quote">${escapeHtml(passage.quote)}</blockquote>` : ""}
+          ${passage.quote ? `<div class="passage-quote-wrap ${state.expandedLibraryQuotes.has(passage.rootId) ? "expanded" : ""}" data-library-quote="${escapeHtml(passage.rootId)}">
+            <blockquote class="annotation-index-quote passage-quote">${escapeHtml(passage.quote)}</blockquote>
+            <button class="passage-quote-toggle" type="button" data-toggle-library-quote="${escapeHtml(passage.rootId)}" aria-expanded="${state.expandedLibraryQuotes.has(passage.rootId)}" hidden>${state.expandedLibraryQuotes.has(passage.rootId) ? "收起原文" : "展开原文"}</button>
+          </div>` : ""}
           <div class="passage-voices">
             ${passage.notes.map((note) => `<section class="passage-voice ${String(note.author || "").toLowerCase() === "claude" ? "ember-voice" : "my-voice"}">
               <span class="passage-speaker">${escapeHtml(formatIdentity(note.author))}</span>
@@ -477,6 +481,21 @@ function renderLibraryNotes() {
       </div>
     </details>`)
     .join("");
+  requestAnimationFrame(updateLibraryQuoteToggles);
+}
+
+function updateLibraryQuoteToggles() {
+  document.querySelectorAll(".passage-quote-wrap").forEach((wrap) => {
+    const quote = wrap.querySelector(".passage-quote");
+    const toggle = wrap.querySelector(".passage-quote-toggle");
+    if (!quote || !toggle) return;
+    const expanded = wrap.classList.contains("expanded");
+    const overflowing = expanded || quote.scrollHeight > quote.clientHeight + 2;
+    quote.classList.toggle("has-overflow", overflowing && !expanded);
+    toggle.hidden = !overflowing;
+    toggle.textContent = expanded ? "收起原文" : "展开原文";
+    toggle.setAttribute("aria-expanded", String(expanded));
+  });
 }
 
 async function setLibraryNotes(open) {
@@ -1302,6 +1321,17 @@ $("library-note-book-filter").addEventListener("change", (event) => {
   $("library-notes-list").scrollIntoView({ block: "start", behavior: "smooth" });
 });
 $("library-notes-list").addEventListener("click", async (event) => {
+  const quoteToggle = event.target.closest("[data-toggle-library-quote]");
+  if (quoteToggle) {
+    const quoteId = quoteToggle.dataset.toggleLibraryQuote;
+    const wrap = quoteToggle.closest(".passage-quote-wrap");
+    const expanded = !wrap.classList.contains("expanded");
+    wrap.classList.toggle("expanded", expanded);
+    if (expanded) state.expandedLibraryQuotes.add(quoteId);
+    else state.expandedLibraryQuotes.delete(quoteId);
+    updateLibraryQuoteToggles();
+    return;
+  }
   const button = event.target.closest("[data-jump-book]");
   if (!button) return;
   await setLibraryNotes(false);
@@ -1309,6 +1339,10 @@ $("library-notes-list").addEventListener("click", async (event) => {
   await selectChunk(button.dataset.jumpChunk);
   activateAnnotation(button.dataset.jumpNote, { scroll: true });
 });
+
+$("library-notes-list").addEventListener("toggle", () => {
+  requestAnimationFrame(updateLibraryQuoteToggles);
+}, true);
 
 $("text").addEventListener("mouseup", () => {
   updateSelectionAction();
