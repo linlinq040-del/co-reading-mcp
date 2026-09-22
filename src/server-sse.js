@@ -124,6 +124,10 @@ async function route(req, res) {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/app-icon.png") {
+  return serveStatic(req, res, url);
+}
+  
   const protectedRoute =
     Boolean(authToken) ||
     url.pathname.startsWith("/api/") ||
